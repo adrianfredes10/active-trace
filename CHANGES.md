@@ -128,7 +128,7 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
 ## FASE 0 — Cimiento e Infraestructura
 
 ### [C-01] `foundation-setup`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-12-foundation-setup`)
 - **Scope**:
   - Estructura de directorios Clean Architecture: `routers/`, `services/`, `repositories/`, `models/`, `schemas/`, `core/`, `integrations/`, `workers/`. Límite ≤500 LOC/archivo.
   - Esqueleto FastAPI con `app/main.py`, health-check `GET /health`, configuración Pydantic v2 Settings desde `.env`.
@@ -150,7 +150,7 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
 > Cadena estrictamente secuencial. Es el corazón multi-tenant del sistema: nada se construye sin esto.
 
 ### [C-02] `core-models-y-tenancy`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-12-core-models-y-tenancy`)
 - **Scope**:
   - Modelo `Tenant` raíz. Mixin base con `id` (UUID), `tenant_id`, `created_at`, `updated_at`, `deleted_at` (soft delete).
   - **Repository genérico** con scope de tenant SIEMPRE activo: todo query filtra por `tenant_id` por defecto (ADR-002 row-level). Un query sin scope debe fallar en review.
@@ -166,7 +166,8 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
   - `docs/ARQUITECTURA.md` §6, §8 (tenant isolation, AES-256, ADR-002)
 
 ### [C-03] `auth-jwt-2fa`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-12-auth-jwt-2fa`)
+- **Nota de implementación**: crea la tabla `usuarios` MÍNIMA (solo auth) + `refresh_tokens` + `password_reset_tokens` en migración `002`. Refresh resuelto como token opaco (hash en DB) con rotación + detección de reuso. Blind index de email (HMAC-SHA256) para lookup sobre el email cifrado. **C-07 hará ALTER de `usuarios`** para sumar PII/negocio (dni, cuil, cbu, legajo…) y crear `asignacion`.
 - **Scope**:
   - `POST /api/auth/login` — email + password (Argon2id), JWT access 15min + refresh token con **rotación** (refresh usado se invalida). Claims mínimos: `user_id`, `tenant_id`, `roles`, `exp`.
   - `POST /api/auth/refresh` — rota refresh, emite nuevo par. `POST /api/auth/logout` — revoca sesión.
@@ -184,7 +185,8 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
   - `docs/ARQUITECTURA.md` §5.1 (ADR-001 auth propio)
 
 ### [C-04] `rbac-permisos-finos`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-12-rbac-permisos-finos`)
+- **Nota de implementación**: migración `003` (roles, permisos, roles_permisos, usuarios_roles) + seed idempotente matriz §3.3. `usuario_rol` mínimo tenant-level; C-07 agrega `Asignacion` con contexto/vigencia. Chequeos globales `modulo:accion`; `(propio)` diferido a C-07. Login puebla claim `roles` desde `usuario_rol`.
 - **Scope**:
   - Catálogo administrable: tablas `Rol`, `Permiso` (`modulo:accion`), matriz `RolPermiso` (datos, NO hardcode).
   - Roles del dominio seed: ALUMNO, TUTOR, PROFESOR, COORDINADOR, NEXO, ADMIN, FINANZAS.
@@ -199,12 +201,13 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
   - `knowledge-base/08_arquitectura_propuesta.md` §3.2 (RBAC permisos finos)
 
 ### [C-05] `audit-log`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-12-audit-log`)
 - **Scope**:
   - Modelo `AuditLog` (E-AUD) **append-only**: sin update ni delete a nivel app y DB. Campos: actor, impersonado, materia, accion, detalle JSON, filas_afectadas, ip, user_agent, fecha_hora.
-  - Helper/decorator de auditoría para registrar acciones significativas con código estandarizado (`CALIFICACIONES_IMPORTAR`, `PADRON_CARGAR`, etc.).
-  - **Impersonación**: permiso `impersonacion:usar`, sesión distinguible, acciones atribuidas al actor real; registra `IMPERSONACION_INICIAR` / `IMPERSONACION_FINALIZAR`.
-  - `Migración 003: audit_log`.
+  - `AuditService.record()` + enum `AuditAction` (catálogo cerrado RN-24). Los módulos de dominio registran acciones explícitamente (middleware global diferido).
+  - **Impersonación**: permiso `impersonacion:usar`, claim JWT `impersonated_sub`, acciones atribuidas al actor real; registra `IMPERSONACION_INICIAR` / `IMPERSONACION_FINALIZAR`.
+  - `GET /api/audit` con `auditoria:ver`.
+  - `Migración 004: audit_logs` (003 quedó para RBAC).
   - Tests: append-only (update/delete rechazados), atribución bajo impersonación, registro de acción con código + filas afectadas.
 - **Dependencias**: `C-04`
 - **Governance**: CRITICO
@@ -223,7 +226,7 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
   - Modelos: `Carrera`, `Cohorte`, `Materia` (catálogo único por tenant — ADR-006).
   - ABM `/api/admin/carreras`, `/api/admin/cohortes`, `/api/admin/materias` con guard `estructura:gestionar` (ADMIN).
   - Reglas: unicidad `(tenant_id, codigo)` en Carrera/Materia; `(tenant_id, carrera_id, nombre)` en Cohorte; carrera inactiva no admite cohortes abiertas.
-  - `Migración 004: carrera, cohorte, materia`.
+  - `Migración 005: carrera, cohorte, materia`.
   - Tests: CRUD, unicidad por tenant, aislamiento multi-tenant, estado activa/inactiva.
 - **Dependencias**: `C-04`
 - **Governance**: MEDIO
@@ -469,7 +472,7 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
 > `C-21` es el shell común. Las features (C-22/23/24) consumen los endpoints ya construidos en backend.
 
 ### [C-21] `frontend-shell-y-auth`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-12-frontend-shell-y-auth`)
 - **Scope**:
   - Scaffolding React 18 + TypeScript + Vite. Estructura feature-based. Tailwind, TanStack Query, React Hook Form + Zod, Axios.
   - Cliente HTTP centralizado: interceptor de auth + **refresh transparente** de tokens. Manejo de 401/403.

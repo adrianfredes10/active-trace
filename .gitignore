@@ -11,3 +11,23 @@ Thumbs.db
 .DS_Store
 .vscode/
 .idea/
+.cursor/
+
+# Estado local de orquestación (no versionar)
+.jr-orchestrator-state.json
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# Python / backend
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+backend/.env
