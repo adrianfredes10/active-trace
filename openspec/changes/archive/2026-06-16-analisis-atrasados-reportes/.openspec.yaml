@@ -1,0 +1,5 @@
+schema: spec-driven
+change: analisis-atrasados-reportes
+description: "C-11 — Atrasados, ranking, notas finales, monitores, export sin corregir"
+governance: MEDIO
+depends_on: [calificaciones-y-umbral]

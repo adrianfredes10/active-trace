@@ -1,0 +1,5 @@
+schema: spec-driven
+change: padron-ingesta-moodle
+description: "C-09 — Padrón versionado, import CSV/XLSX, Moodle WS, vaciar datos"
+governance: MEDIO
+depends_on: [usuarios-y-asignaciones]

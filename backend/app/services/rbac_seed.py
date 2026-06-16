@@ -39,6 +39,8 @@ ROLE_PERMISSION_KEYS: dict[str, list[str]] = {
     "PROFESOR": [
         "avisos:confirmar",
         "calificaciones:importar",
+        "padron:importar",
+        "padron:vaciar",
         "atrasados:ver",
         "entregas:detectar_sin_corregir",
         "comunicacion:enviar",
@@ -49,6 +51,8 @@ ROLE_PERMISSION_KEYS: dict[str, list[str]] = {
     "COORDINADOR": [
         "avisos:confirmar",
         "calificaciones:importar",
+        "padron:importar",
+        "padron:vaciar",
         "atrasados:ver",
         "entregas:detectar_sin_corregir",
         "comunicacion:enviar",

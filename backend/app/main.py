@@ -3,11 +3,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.routers.analisis import router as analisis_router
+from app.api.v1.routers.calificaciones import router as calificaciones_router
+from app.api.v1.routers.padron import router as padron_router
+from app.api.v1.routers.equipos import router as equipos_router
+from app.api.v1.routers.asignaciones import router as asignaciones_router
 from app.api.v1.routers.audit import router as audit_router
 from app.api.v1.routers.auth import router as auth_router
 from app.api.v1.routers.estructura import router as estructura_router
 from app.api.v1.routers.health import router as health_router
 from app.api.v1.routers.rbac import router as rbac_router
+from app.api.v1.routers.usuarios import router as usuarios_router
 from app.core.config import get_settings
 from app.core.database import dispose_db, init_db
 from app.core.logging import setup_logging
@@ -46,6 +52,12 @@ def create_app() -> FastAPI:
     app.include_router(rbac_router)
     app.include_router(audit_router)
     app.include_router(estructura_router)
+    app.include_router(usuarios_router)
+    app.include_router(asignaciones_router)
+    app.include_router(equipos_router)
+    app.include_router(padron_router)
+    app.include_router(calificaciones_router)
+    app.include_router(analisis_router)
     return app
 
 

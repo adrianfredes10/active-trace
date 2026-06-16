@@ -1,0 +1,5 @@
+schema: spec-driven
+change: calificaciones-y-umbral
+description: "C-10 — Calificaciones LMS, umbral por asignación, finalización sin corregir"
+governance: MEDIO
+depends_on: [padron-ingesta-moodle]

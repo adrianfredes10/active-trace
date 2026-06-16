@@ -40,6 +40,8 @@ class Settings(BaseSettings):
         default="http://localhost:5173,http://127.0.0.1:5173",
         alias="CORS_ORIGINS",
     )
+    moodle_base_url: str | None = Field(default=None, alias="MOODLE_BASE_URL")
+    moodle_token: str | None = Field(default=None, alias="MOODLE_TOKEN")
 
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

@@ -70,7 +70,7 @@ GATE 5: C-06 ✓                                     ← FORK ANCHO (entidades r
   → C-15 avisos-y-acknowledgment                   [Agente B — si C-05 ✓]
   → C-17 programas-y-fechas-academicas             [Agente B]
 
-GATE 6: C-07 ✓                                     ← FORK ANCHO (usuarios + asignaciones listos)
+GATE 6: C-07 ✓, C-08 ✓                               ← equipos docentes listos
   → C-08 equipos-docentes                          [Agente A]
   → C-09 padron-ingesta-moodle                     [Agente B]
   → C-13 encuentros-y-guardias                     [Agente A]
@@ -81,7 +81,7 @@ GATE 6: C-07 ✓                                     ← FORK ANCHO (usuarios + 
   → C-20 perfil-y-mensajeria-interna               [Agente C]
 
 GATE 7: C-09 ✓
-  → C-10 calificaciones-y-umbral                   [Agente B]
+  → C-10 calificaciones-y-umbral                     [Agente B]
 
 GATE 8: C-10 ✓
   → C-11 analisis-atrasados-reportes               [Agente B]
@@ -221,7 +221,7 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
 ## FASE 2 — Entidades Raíz del Dominio Académico
 
 ### [C-06] `estructura-academica`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-16-estructura-academica`)
 - **Scope**:
   - Modelos: `Carrera`, `Cohorte`, `Materia` (catálogo único por tenant — ADR-006).
   - ABM `/api/admin/carreras`, `/api/admin/cohortes`, `/api/admin/materias` con guard `estructura:gestionar` (ADMIN).
@@ -240,13 +240,13 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
 ## FASE 3 — Identidad, Asignaciones y Estructura Documental
 
 ### [C-07] `usuarios-y-asignaciones`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-16-usuarios-y-asignaciones`)
 - **Scope**:
   - Modelo `Usuario` con PII **cifrada** (`email`, `dni`, `cuil`, `cbu`, `alias_cbu`); legajo como atributo de negocio opcional (no PK, no credencial).
   - Modelo `Asignacion` (Usuario ↔ Rol ↔ contexto: materia/carrera/cohorte/comisiones), `responsable_id` (jerarquía), vigencia `desde/hasta`, `estado_vigencia` derivado.
   - ABM usuarios `/api/admin/usuarios` (guard gestión de usuarios, ADMIN); CRUD asignaciones `/api/asignaciones` (`equipos:asignar`).
   - Unicidad `(tenant_id, email)`. Asignación vencida no otorga permisos pero se conserva (histórico).
-  - `Migración 005: usuario, asignacion`.
+  - `Migración 006: usuario, asignacion`.
   - Tests: PII cifrada no expuesta en logs/respuestas, unicidad email por tenant, vigencia (vencida no autoriza), multi-rol, jerarquía responsable.
 - **Dependencias**: `C-06`
 - **Governance**: CRITICO
@@ -277,7 +277,7 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
 > Todos dependen de `C-07` (usuarios + asignaciones). Se pueden repartir entre los 3 agentes en paralelo.
 
 ### [C-08] `equipos-docentes`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-16-equipos-docentes`)
 - **Scope**:
   - Vistas/endpoints sobre `Asignacion`: mis-equipos del docente (F4.2), gestión de asignaciones (F4.3).
   - Asignación masiva (F4.4): bloque docentes × materia × carrera × cohorte × rol con vigencia.
@@ -293,13 +293,13 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
   - `knowledge-base/04_modelo_de_datos.md` §E5 Asignación
 
 ### [C-09] `padron-ingesta-moodle`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-16-padron-ingesta-moodle`)
 - **Scope**:
   - Modelos `VersionPadron` + `EntradaPadron` (versionado: una versión activa por materia×cohorte; activar nueva desactiva la anterior).
   - Import de padrón: archivo `.xlsx`/`.csv` (fallback manual) con vista previa (F1.3, F1.4).
   - Integración **Moodle Web Services** (`integrations/moodle_ws.py`): sync de usuarios/actividades, sync nocturna + on-demand; errores mapean a `502` con reintento.
   - Vaciar datos de materia (F1.5, RN-04). Audit `PADRON_CARGAR`.
-  - `Migración 0NN: version_padron, entrada_padron`.
+  - `Migración 007: version_padron, entrada_padron`.
   - Tests: versionado (activar desactiva anterior), import xlsx/csv, entrada sin usuario_id (alumno sin cuenta), aislamiento tenant, mock Moodle WS + fallback 502.
 - **Dependencias**: `C-07`
 - **Governance**: MEDIO
@@ -309,7 +309,7 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
   - `knowledge-base/08_arquitectura_propuesta.md` §5.1 (Moodle WS, fallback manual)
 
 ### [C-10] `calificaciones-y-umbral`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-16-calificaciones-y-umbral`)
 - **Scope**:
   - Modelos `Calificacion` (numérica/textual, `aprobado` derivado, origen Importado/Manual) y `UmbralMateria` (umbral_pct por asignación, valores aprobatorios).
   - Importar calificaciones desde archivo del LMS (F1.1): detecta columnas de actividades numéricas (RN-01) y textuales (RN-02), vista previa, selección de actividades.
@@ -325,7 +325,7 @@ C-01 → C-02 → C-03 → C-04 → C-06 → C-07 → C-09 → C-10 → C-11 →
   - `knowledge-base/07_flujos_principales.md` FL-02 (pasos 3–5)
 
 ### [C-11] `analisis-atrasados-reportes`
-- **Estado**: `[ ]` pendiente
+- **Estado**: `[x]` archivado (`openspec/changes/archive/2026-06-16-analisis-atrasados-reportes`)
 - **Scope**:
   - Cómputo de **alumnos atrasados** (actividades faltantes o nota < umbral, RN-06) (F2.2).
   - Ranking de actividades aprobadas (F2.3, RN-09); reportes rápidos por materia (F2.4); notas finales agrupadas (F2.5).

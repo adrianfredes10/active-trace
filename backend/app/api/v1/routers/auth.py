@@ -45,8 +45,9 @@ _INVALID = HTTPException(
 
 
 async def _find_tenant_id(db: AsyncSession, slug: str) -> uuid.UUID | None:
+    normalized = slug.strip().lower()
     result = await db.execute(
-        select(Tenant.id).where(Tenant.slug == slug, Tenant.deleted_at.is_(None))
+        select(Tenant.id).where(Tenant.slug == normalized, Tenant.deleted_at.is_(None))
     )
     return result.scalar_one_or_none()
 

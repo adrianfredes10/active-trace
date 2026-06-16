@@ -1,0 +1,5 @@
+schema: spec-driven
+change: usuarios-y-asignaciones
+description: "C-07 — Extender Usuario con PII cifrada + modelo Asignacion con vigencia temporal"
+governance: CRITICO
+depends_on: [estructura-academica]

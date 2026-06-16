@@ -65,11 +65,17 @@ async def seed_dev() -> None:
             )
             print(f"Usuario creado: {DEMO_EMAIL}")
         else:
-            print(f"Usuario existente: {DEMO_EMAIL}")
+            user.password_hash = hash_password(DEMO_PASSWORD)
+            print(f"Usuario existente (password sincronizado): {DEMO_EMAIL}")
 
         rol = await RolRepository(session, tenant_id).get_by_codigo("ADMIN")
         assert rol is not None
-        await UsuarioRolRepository(session, tenant_id).assign_role(user.id, rol.id)
+        usuario_roles = UsuarioRolRepository(session, tenant_id)
+        if "ADMIN" not in await usuario_roles.list_role_codes_for_user(user.id):
+            await usuario_roles.assign_role(user.id, rol.id)
+            print("Rol ADMIN asignado")
+        else:
+            print("Rol ADMIN ya asignado")
         await session.commit()
 
     await dispose_db()
