@@ -1,0 +1,5 @@
+schema: spec-driven
+change: tareas-internas
+description: "C-16 — Workflow de tareas internas docentes"
+governance: MEDIO
+depends_on: [usuarios-y-asignaciones]

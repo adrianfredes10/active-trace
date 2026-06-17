@@ -12,7 +12,7 @@ export function PermissionGate({ permission, children, fallback = null }: Permis
   const { hasPermission, isLoading } = usePermissions();
 
   if (isLoading) {
-    return null;
+    return <p className="text-sm text-slate-600">Cargando permisos…</p>;
   }
 
   if (!hasPermission(permission)) {

@@ -57,7 +57,11 @@ class Usuario(Base, TenantScopedMixin):
     legajo_profesional: Mapped[str | None] = mapped_column(String(50), nullable=True)
     facturador: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     estado: Mapped[UsuarioEstado] = mapped_column(
-        Enum(UsuarioEstado, name="usuario_estado"),
+        Enum(
+            UsuarioEstado,
+            name="usuario_estado",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=UsuarioEstado.activo,
         nullable=False,
     )

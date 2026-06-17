@@ -11,6 +11,13 @@ const DEV_TENANT = "demo";
 const DEV_EMAIL = "admin@demo.local";
 const DEV_PASSWORD = "Admin1234!";
 
+const DEV_ACCOUNTS = [
+  { label: "Admin", email: DEV_EMAIL, password: DEV_PASSWORD, accent: "bg-emerald-600 hover:bg-emerald-500" },
+  { label: "Profesor", email: "prof@demo.local", password: "Prof1234!", accent: "bg-slate-700 hover:bg-slate-600" },
+  { label: "Coord.", email: "coord@demo.local", password: "Coord1234!", accent: "bg-slate-700 hover:bg-slate-600" },
+  { label: "Finanzas", email: "finanzas@demo.local", password: "Fin1234!", accent: "bg-slate-700 hover:bg-slate-600" },
+] as const;
+
 const schema = z.object({
   tenant_slug: z
     .string()
@@ -30,7 +37,7 @@ export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
-  const [devLoading, setDevLoading] = useState(false);
+  const [devLoadingEmail, setDevLoadingEmail] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -73,14 +80,14 @@ export function LoginPage() {
     }),
   );
 
-  const onDevLogin = async () => {
-    setDevLoading(true);
+  const onDevLogin = async (email: string, password: string) => {
+    setDevLoadingEmail(email);
     await completeLogin({
       tenant_slug: DEV_TENANT,
-      email: DEV_EMAIL,
-      password: DEV_PASSWORD,
+      email,
+      password,
     });
-    setDevLoading(false);
+    setDevLoadingEmail(null);
   };
 
   return (
@@ -91,17 +98,22 @@ export function LoginPage() {
 
         {import.meta.env.DEV && (
           <div className="mt-4 space-y-2">
-            <button
-              type="button"
-              disabled={devLoading || isSubmitting}
-              onClick={() => void onDevLogin()}
-              className="w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
-            >
-              {devLoading ? "Entrando…" : "Entrar al demo (1 clic)"}
-            </button>
-            <p className="text-center text-xs text-slate-500">
-              Instituto Demo · admin@demo.local
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Demo rápido — tenant demo
             </p>
+            <div className="grid grid-cols-2 gap-2">
+              {DEV_ACCOUNTS.map((acc) => (
+                <button
+                  key={acc.email}
+                  type="button"
+                  disabled={devLoadingEmail !== null || isSubmitting}
+                  onClick={() => void onDevLogin(acc.email, acc.password)}
+                  className={`rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-60 ${acc.accent}`}
+                >
+                  {devLoadingEmail === acc.email ? "Entrando…" : acc.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -162,7 +174,7 @@ export function LoginPage() {
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="submit"
-            disabled={isSubmitting || devLoading}
+            disabled={isSubmitting || devLoadingEmail !== null}
             className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {isSubmitting ? "Ingresando…" : "Ingresar"}

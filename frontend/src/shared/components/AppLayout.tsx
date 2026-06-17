@@ -5,6 +5,15 @@ import { usePermissions } from "@/features/auth/hooks/usePermissions";
 
 const NAV_ITEMS = [
   { to: "/", label: "Inicio", permission: null },
+  { to: "/comision", label: "Mi comisión", permission: "atrasados:ver" },
+  { to: "/coordinacion", label: "Coordinación", permission: "equipos:asignar" },
+  {
+    to: "/admin",
+    label: "Admin",
+    permission: null,
+    anyPermission: ["estructura:gestionar", "usuarios:gestionar"],
+  },
+  { to: "/finanzas", label: "Finanzas", permission: "liquidaciones:grilla" },
   { to: "/auditoria", label: "Auditoría", permission: "auditoria:ver" },
 ] as const;
 
@@ -12,9 +21,12 @@ export function AppLayout() {
   const { logout } = useAuth();
   const { hasPermission } = usePermissions();
 
-  const visibleNav = NAV_ITEMS.filter(
-    (item) => item.permission === null || hasPermission(item.permission),
-  );
+  const visibleNav = NAV_ITEMS.filter((item) => {
+    if ("anyPermission" in item && item.anyPermission) {
+      return item.anyPermission.some((p) => hasPermission(p));
+    }
+    return item.permission === null || hasPermission(item.permission);
+  });
 
   return (
     <div className="min-h-screen bg-slate-50">

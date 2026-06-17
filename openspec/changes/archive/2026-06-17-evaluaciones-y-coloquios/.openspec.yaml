@@ -1,0 +1,5 @@
+schema: spec-driven
+change: evaluaciones-y-coloquios
+description: "C-14 — Convocatorias, turnos con cupo, reservas y resultados"
+governance: MEDIO
+depends_on: [usuarios-y-asignaciones]

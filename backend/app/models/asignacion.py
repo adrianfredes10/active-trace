@@ -32,6 +32,15 @@ class RolAsignacion(str, enum.Enum):
     finanzas = "FINANZAS"
 
 
+def rol_asignacion_column(**kwargs: object) -> Enum:
+    return Enum(
+        RolAsignacion,
+        name="rol_asignacion",
+        values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        **kwargs,
+    )
+
+
 class Asignacion(Base, TenantScopedMixin):
     __tablename__ = "asignaciones"
 
@@ -39,7 +48,7 @@ class Asignacion(Base, TenantScopedMixin):
         ForeignKey("usuarios.id"), nullable=False, index=True
     )
     rol: Mapped[RolAsignacion] = mapped_column(
-        Enum(RolAsignacion, name="rol_asignacion"), nullable=False
+        rol_asignacion_column(), nullable=False
     )
 
     materia_id: Mapped[UUID | None] = mapped_column(

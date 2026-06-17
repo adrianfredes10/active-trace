@@ -6,7 +6,7 @@ aislamiento, no un sujeto de él.
 
 import enum
 
-from sqlalchemy import Enum, String
+from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -27,6 +27,9 @@ class Tenant(Base, TimestampSoftDeleteMixin):
         Enum(TenantEstado, name="tenant_estado"),
         default=TenantEstado.ACTIVO,
         nullable=False,
+    )
+    aprobacion_masiva_comunicaciones: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
     )
 
     def __repr__(self) -> str:

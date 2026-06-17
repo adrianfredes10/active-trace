@@ -9,11 +9,13 @@ import io
 import logging
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.asignacion import Asignacion
+from app.models.estructura import Carrera, Cohorte, Materia
 from app.repositories.asignacion_repository import AsignacionRepository
-from app.schemas.asignacion import AsignacionCreate
+from app.schemas.asignacion import AsignacionCreate, AsignacionResponse, asignacion_response
 from app.schemas.equipos import (
     AsignacionMasivaRequest,
     ClonarEquipoRequest,
@@ -40,6 +42,69 @@ class EquiposService:
         return list(
             await self._repo.list_by_usuario(usuario_id, solo_vigentes=solo_vigentes)
         )
+
+    async def mis_equipos_responses(
+        self,
+        usuario_id: uuid.UUID,
+        *,
+        solo_vigentes: bool = True,
+    ) -> list[AsignacionResponse]:
+        items = await self.mis_equipos(usuario_id, solo_vigentes=solo_vigentes)
+        if not items:
+            return []
+
+        materia_ids = {a.materia_id for a in items if a.materia_id}
+        cohorte_ids = {a.cohorte_id for a in items if a.cohorte_id}
+        carrera_ids = {a.carrera_id for a in items if a.carrera_id}
+
+        materias: dict[uuid.UUID, Materia] = {}
+        if materia_ids:
+            rows = await self._session.execute(
+                select(Materia).where(
+                    Materia.tenant_id == self._tenant_id,
+                    Materia.id.in_(materia_ids),
+                    Materia.deleted_at.is_(None),
+                )
+            )
+            materias = {m.id: m for m in rows.scalars()}
+
+        cohortes: dict[uuid.UUID, Cohorte] = {}
+        if cohorte_ids:
+            rows = await self._session.execute(
+                select(Cohorte).where(
+                    Cohorte.tenant_id == self._tenant_id,
+                    Cohorte.id.in_(cohorte_ids),
+                    Cohorte.deleted_at.is_(None),
+                )
+            )
+            cohortes = {c.id: c for c in rows.scalars()}
+
+        carreras: dict[uuid.UUID, Carrera] = {}
+        if carrera_ids:
+            rows = await self._session.execute(
+                select(Carrera).where(
+                    Carrera.tenant_id == self._tenant_id,
+                    Carrera.id.in_(carrera_ids),
+                    Carrera.deleted_at.is_(None),
+                )
+            )
+            carreras = {c.id: c for c in rows.scalars()}
+
+        responses: list[AsignacionResponse] = []
+        for asig in items:
+            materia = materias.get(asig.materia_id) if asig.materia_id else None
+            cohorte = cohortes.get(asig.cohorte_id) if asig.cohorte_id else None
+            carrera = carreras.get(asig.carrera_id) if asig.carrera_id else None
+            responses.append(
+                asignacion_response(
+                    asig,
+                    materia_codigo=materia.codigo if materia else None,
+                    materia_nombre=materia.nombre if materia else None,
+                    cohorte_nombre=cohorte.nombre if cohorte else None,
+                    carrera_codigo=carrera.codigo if carrera else None,
+                )
+            )
+        return responses
 
     async def asignacion_masiva(
         self, data: AsignacionMasivaRequest

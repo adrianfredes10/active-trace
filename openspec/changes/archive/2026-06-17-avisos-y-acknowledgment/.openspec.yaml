@@ -1,0 +1,5 @@
+schema: spec-driven
+change: avisos-y-acknowledgment
+description: "C-15 — Tablón de avisos con scope, vigencia y ack"
+governance: MEDIO
+depends_on: [estructura-academica]

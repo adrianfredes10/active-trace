@@ -1,0 +1,5 @@
+schema: spec-driven
+change: programas-y-fechas-academicas
+description: "C-17 — Programas de materia y fechas académicas"
+governance: BAJO
+depends_on: [estructura-academica]

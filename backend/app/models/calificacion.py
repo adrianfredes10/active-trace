@@ -38,7 +38,11 @@ class Calificacion(Base, TenantScopedMixin):
     nota_textual: Mapped[str | None] = mapped_column(String(100), nullable=True)
     aprobado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     origen: Mapped[OrigenCalificacion] = mapped_column(
-        Enum(OrigenCalificacion, name="origen_calificacion"),
+        Enum(
+            OrigenCalificacion,
+            name="origen_calificacion",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         nullable=False,
         default=OrigenCalificacion.importado,
     )

@@ -55,8 +55,8 @@ async def mis_equipos(
 ) -> EquipoListResponse:
     """F4.2 — asignaciones del usuario autenticado (identidad desde sesión)."""
     svc = EquiposService(db, user.tenant_id)
-    items = await svc.mis_equipos(user.id, solo_vigentes=solo_vigentes)
-    return EquipoListResponse(items=[asignacion_response(a) for a in items])
+    items = await svc.mis_equipos_responses(user.id, solo_vigentes=solo_vigentes)
+    return EquipoListResponse(items=items)
 
 
 @router.post(

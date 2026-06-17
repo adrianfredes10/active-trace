@@ -25,7 +25,11 @@ class Carrera(Base, TenantScopedMixin):
     codigo: Mapped[str] = mapped_column(String(50), nullable=False)
     nombre: Mapped[str] = mapped_column(String(255), nullable=False)
     estado: Mapped[EntidadEstado] = mapped_column(
-        Enum(EntidadEstado, name="entidad_estado"),
+        Enum(
+            EntidadEstado,
+            name="entidad_estado",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=EntidadEstado.ACTIVA,
         nullable=False,
     )
@@ -52,7 +56,12 @@ class Cohorte(Base, TenantScopedMixin):
     vig_desde: Mapped[date] = mapped_column(Date, nullable=False)
     vig_hasta: Mapped[date | None] = mapped_column(Date, nullable=True)
     estado: Mapped[EntidadEstado] = mapped_column(
-        Enum(EntidadEstado, name="entidad_estado", create_constraint=False),
+        Enum(
+            EntidadEstado,
+            name="entidad_estado",
+            create_constraint=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=EntidadEstado.ACTIVA,
         nullable=False,
     )
@@ -66,8 +75,14 @@ class Materia(Base, TenantScopedMixin):
 
     codigo: Mapped[str] = mapped_column(String(50), nullable=False)
     nombre: Mapped[str] = mapped_column(String(255), nullable=False)
+    plus_grupo: Mapped[str | None] = mapped_column(String(50), nullable=True)
     estado: Mapped[EntidadEstado] = mapped_column(
-        Enum(EntidadEstado, name="entidad_estado", create_constraint=False),
+        Enum(
+            EntidadEstado,
+            name="entidad_estado",
+            create_constraint=False,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=EntidadEstado.ACTIVA,
         nullable=False,
     )

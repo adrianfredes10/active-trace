@@ -35,6 +35,9 @@ ROLE_PERMISSION_KEYS: dict[str, list[str]] = {
         "entregas:detectar_sin_corregir",
         "encuentros:gestionar",
         "guardias:registrar",
+        "tareas:gestionar",
+        "inbox:leer",
+        "inbox:responder",
     ],
     "PROFESOR": [
         "avisos:confirmar",
@@ -45,8 +48,11 @@ ROLE_PERMISSION_KEYS: dict[str, list[str]] = {
         "entregas:detectar_sin_corregir",
         "comunicacion:enviar",
         "encuentros:gestionar",
+        "evaluaciones:gestionar",
         "guardias:registrar",
         "tareas:gestionar",
+        "inbox:leer",
+        "inbox:responder",
     ],
     "COORDINADOR": [
         "avisos:confirmar",
@@ -58,11 +64,14 @@ ROLE_PERMISSION_KEYS: dict[str, list[str]] = {
         "comunicacion:enviar",
         "comunicacion:aprobar",
         "encuentros:gestionar",
+        "evaluaciones:gestionar",
         "guardias:registrar",
         "tareas:gestionar",
         "avisos:publicar",
         "equipos:asignar",
         "auditoria:ver",
+        "inbox:leer",
+        "inbox:responder",
     ],
     "NEXO": [],
     "ADMIN": [
@@ -73,6 +82,7 @@ ROLE_PERMISSION_KEYS: dict[str, list[str]] = {
         "comunicacion:enviar",
         "comunicacion:aprobar",
         "encuentros:gestionar",
+        "evaluaciones:gestionar",
         "guardias:registrar",
         "tareas:gestionar",
         "avisos:publicar",
@@ -82,6 +92,8 @@ ROLE_PERMISSION_KEYS: dict[str, list[str]] = {
         "auditoria:ver",
         "tenant:configurar",
         "impersonacion:usar",
+        "inbox:leer",
+        "inbox:responder",
     ],
     "FINANZAS": [
         "avisos:confirmar",
@@ -89,6 +101,8 @@ ROLE_PERMISSION_KEYS: dict[str, list[str]] = {
         "liquidaciones:grilla",
         "liquidaciones:cerrar",
         "facturas:gestionar",
+        "inbox:leer",
+        "inbox:responder",
     ],
 }
 

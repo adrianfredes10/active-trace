@@ -48,13 +48,24 @@ class AsignacionResponse(_Schema):
     hasta: date | None
     vigente: bool
     created_at: datetime
+    materia_codigo: str | None = None
+    materia_nombre: str | None = None
+    cohorte_nombre: str | None = None
+    carrera_codigo: str | None = None
 
 
 class AsignacionListResponse(_Schema):
     items: list[AsignacionResponse] = Field(default_factory=list)
 
 
-def asignacion_response(entity: Asignacion) -> AsignacionResponse:
+def asignacion_response(
+    entity: Asignacion,
+    *,
+    materia_codigo: str | None = None,
+    materia_nombre: str | None = None,
+    cohorte_nombre: str | None = None,
+    carrera_codigo: str | None = None,
+) -> AsignacionResponse:
     """Serializa Asignacion incluyendo `vigente` (propiedad derivada)."""
     return AsignacionResponse(
         id=entity.id,
@@ -69,4 +80,8 @@ def asignacion_response(entity: Asignacion) -> AsignacionResponse:
         hasta=entity.hasta,
         vigente=entity.vigente,
         created_at=entity.created_at,
+        materia_codigo=materia_codigo,
+        materia_nombre=materia_nombre,
+        cohorte_nombre=cohorte_nombre,
+        carrera_codigo=carrera_codigo,
     )

@@ -1,0 +1,5 @@
+schema: spec-driven
+change: encuentros-y-guardias
+description: "C-13 — Slots recurrentes, instancias, guardias, HTML aula"
+governance: MEDIO
+depends_on: [usuarios-y-asignaciones]

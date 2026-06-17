@@ -1,0 +1,5 @@
+schema: spec-driven
+change: comunicaciones-cola-worker
+description: "C-12 — Cola comunicaciones, preview, aprobación masiva, worker"
+governance: ALTO
+depends_on: [analisis-atrasados-reportes]

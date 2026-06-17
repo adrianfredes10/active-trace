@@ -21,7 +21,6 @@ describe("LoginPage", () => {
     );
 
     expect(screen.getByRole("heading", { name: /activia-trace/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/tenant/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /ingresar/i })).toBeInTheDocument();
   });

@@ -11,14 +11,17 @@ export function usePermissions() {
     queryFn: fetchPermisosEfectivos,
     enabled: isAuthenticated,
     staleTime: 60_000,
+    retry: 1,
   });
 
-  const hasPermission = (permission: string): boolean =>
-    (query.data ?? []).includes(permission);
+  const permissions = query.data ?? [];
+
+  const hasPermission = (permission: string): boolean => permissions.includes(permission);
 
   return {
-    permissions: query.data ?? [],
+    permissions,
     hasPermission,
-    isLoading: query.isLoading,
+    isLoading: isAuthenticated && query.isPending,
+    isError: query.isError,
   };
 }

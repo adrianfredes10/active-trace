@@ -57,6 +57,11 @@ class BaseRepository(Generic[ModelT]):
     async def add(self, entity: ModelT) -> ModelT:
         # La identidad de tenant la define el contexto, no el dato de entrada.
         entity.tenant_id = self.tenant_id
+        now = datetime.now(timezone.utc)
+        if entity.created_at is None:
+            entity.created_at = now
+        if entity.updated_at is None:
+            entity.updated_at = now
         self.session.add(entity)
         await self.session.flush()
         return entity
