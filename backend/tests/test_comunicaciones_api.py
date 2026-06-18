@@ -9,6 +9,7 @@ from sqlalchemy import select
 from app.core.database import get_session_factory
 from app.core.security import email_blind_index, hash_password
 from app.models import Tenant, Usuario
+from app.models.asignacion import Asignacion, RolAsignacion
 from app.models.comunicacion import Comunicacion, EstadoComunicacion
 from app.models.estructura import Carrera, Cohorte, EntidadEstado, Materia
 from app.repositories.rbac_repository import RolRepository, UsuarioRolRepository
@@ -21,6 +22,11 @@ SLUG = "c12-api"
 EMAIL_PROF = "prof@c12.example.com"
 EMAIL_COORD = "coord@c12.example.com"
 PW = "S3cret!pass"
+
+PADRON_CSV = b"""nombre,apellidos,email,comision
+Ana,Garcia,ana@example.com,A
+Pedro,Lopez,pedro@example.com,B
+"""
 
 PAYLOAD_BASE = {
     "asunto": "Recordatorio {{nombre}}",
@@ -83,7 +89,12 @@ async def _seed(api_client) -> dict:
         await session.flush()
         await session.commit()
 
-    return {"materia_id": str(materia.id)}
+    return {
+        "materia_id": str(materia.id),
+        "cohorte_id": str(cohorte.id),
+        "carrera_id": str(carrera.id),
+        "prof_id": str(users[EMAIL_PROF].id),
+    }
 
 
 async def _login(api_client, email: str) -> str:
@@ -97,6 +108,55 @@ async def _login(api_client, email: str) -> str:
 
 async def _headers(api_client, email: str) -> dict:
     return {"Authorization": f"Bearer {await _login(api_client, email)}"}
+
+
+@pytest.mark.asyncio
+async def test_enviar_rechaza_destinatario_fuera_de_comision(api_client) -> None:
+    """1.5 — 403 si destinatario no pertenece a comisión permitida."""
+    import io
+
+    ctx = await _seed(api_client)
+    factory = get_session_factory()
+    async with factory() as session:
+        asig = Asignacion(
+            tenant_id=TENANT_ID,
+            usuario_id=uuid.UUID(ctx["prof_id"]),
+            rol=RolAsignacion.profesor,
+            materia_id=uuid.UUID(ctx["materia_id"]),
+            carrera_id=uuid.UUID(ctx["carrera_id"]),
+            cohorte_id=uuid.UUID(ctx["cohorte_id"]),
+            comisiones=["A"],
+            desde=date(2026, 3, 1),
+        )
+        session.add(asig)
+        await session.commit()
+
+    headers = await _headers(api_client, EMAIL_PROF)
+    coord_headers = await _headers(api_client, EMAIL_COORD)
+    padron = await api_client.post(
+        "/api/padron/importar",
+        data={"materia_id": ctx["materia_id"], "cohorte_id": ctx["cohorte_id"]},
+        files={"file": ("padron.csv", io.BytesIO(PADRON_CSV), "text/csv")},
+        headers=coord_headers,
+    )
+    assert padron.status_code == 201
+
+    resp = await api_client.post(
+        "/api/comunicaciones/enviar",
+        json={
+            **PAYLOAD_BASE,
+            "materia_id": ctx["materia_id"],
+            "destinatarios": [
+                {
+                    "email": "pedro@example.com",
+                    "nombre": "Pedro",
+                    "apellidos": "Lopez",
+                }
+            ],
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 403
 
 
 @pytest.mark.asyncio

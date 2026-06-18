@@ -9,20 +9,61 @@ Reglas clave:
 
 import logging
 import uuid
+from datetime import date
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import email_blind_index, hash_password
+from app.models.asignacion import RolAsignacion
 from app.models.usuario import Usuario, UsuarioEstado
+from app.repositories.rbac_repository import RolRepository, UsuarioRolRepository
 from app.repositories.usuario_repository import UsuarioRepository
-from app.schemas.usuario import UsuarioCreate, UsuarioPIIUpdate, UsuarioUpdate
+from app.schemas.asignacion import AsignacionCreate
+from app.schemas.usuario import ProfesorAltaRequest, UsuarioCreate, UsuarioPIIUpdate, UsuarioUpdate
+from app.services.asignacion_service import AsignacionService
 
 logger = logging.getLogger(__name__)
 
 
 class UsuarioService:
     def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
+        self._session = session
+        self._tenant_id = tenant_id
         self._repo = UsuarioRepository(session, tenant_id)
+
+    async def crear_profesor_con_asignacion(self, data: ProfesorAltaRequest) -> tuple[Usuario, uuid.UUID]:
+        usuario = await self.crear_usuario(
+            UsuarioCreate(
+                email=data.email,
+                password=data.password,
+                nombre=data.nombre,
+                apellidos=data.apellidos,
+            )
+        )
+        rol = await RolRepository(self._session, self._tenant_id).get_by_codigo("PROFESOR")
+        if rol is None:
+            raise ValueError("Rol PROFESOR no configurado en el tenant")
+        await UsuarioRolRepository(self._session, self._tenant_id).assign_role(
+            usuario.id, rol.id
+        )
+        asignacion = await AsignacionService(self._session, self._tenant_id).crear_asignacion(
+            AsignacionCreate(
+                usuario_id=usuario.id,
+                rol=RolAsignacion.profesor,
+                materia_id=data.materia_id,
+                carrera_id=data.carrera_id,
+                cohorte_id=data.cohorte_id,
+                comisiones=[data.comision],
+                desde=date.today(),
+            )
+        )
+        logger.info(
+            "profesor creado id=%s asignacion=%s comision=%s",
+            usuario.id,
+            asignacion.id,
+            data.comision,
+        )
+        return usuario, asignacion.id
 
     async def crear_usuario(self, data: UsuarioCreate) -> Usuario:
         email_hash = email_blind_index(data.email)

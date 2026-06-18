@@ -69,3 +69,20 @@ class UsuarioResponse(_Schema):
 
 class UsuarioListResponse(_Schema):
     items: list[UsuarioResponse] = Field(default_factory=list)
+
+
+class ProfesorAltaRequest(_Schema):
+    email: EmailStr
+    password: str = Field(min_length=8)
+    nombre: str | None = Field(default=None, max_length=100)
+    apellidos: str | None = Field(default=None, max_length=150)
+    materia_id: uuid.UUID
+    carrera_id: uuid.UUID
+    cohorte_id: uuid.UUID
+    comision: str = Field(min_length=1, max_length=100)
+
+
+class ProfesorAltaResponse(_Schema):
+    usuario: UsuarioResponse
+    asignacion_id: uuid.UUID
+    comision: str

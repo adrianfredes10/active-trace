@@ -15,6 +15,8 @@ from app.core.audit_actions import AuditAction
 from app.core.dependencies import CurrentUser, get_current_user, get_db
 from app.core.permissions import require_permission
 from app.schemas.usuario import (
+    ProfesorAltaRequest,
+    ProfesorAltaResponse,
     UsuarioCreate,
     UsuarioListResponse,
     UsuarioResponse,
@@ -83,6 +85,46 @@ async def crear_usuario(
     await db.commit()
     await db.refresh(nuevo)
     return _usuario_response(nuevo)
+
+
+@router.post(
+    "/profesor",
+    response_model=ProfesorAltaResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def crear_profesor(
+    body: ProfesorAltaRequest,
+    request: Request,
+    user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> ProfesorAltaResponse:
+    svc = UsuarioService(db, user.tenant_id)
+    try:
+        nuevo, asignacion_id = await svc.crear_profesor_con_asignacion(body)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+
+    await _audit(
+        db,
+        user,
+        request,
+        accion=AuditAction.USUARIO_CREAR,
+        detalle={
+            "usuario_id": str(nuevo.id),
+            "asignacion_id": str(asignacion_id),
+            "comision": body.comision,
+            "rol": "PROFESOR",
+        },
+    )
+    await db.commit()
+    await db.refresh(nuevo)
+    return ProfesorAltaResponse(
+        usuario=_usuario_response(nuevo),
+        asignacion_id=asignacion_id,
+        comision=body.comision,
+    )
 
 
 @router.get("/{usuario_id}", response_model=UsuarioResponse)

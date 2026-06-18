@@ -11,6 +11,7 @@ function ctxParams(ctx: ComisionContexto) {
     asignacion_id: ctx.asignacion_id,
     materia_id: ctx.materia_id,
     cohorte_id: ctx.cohorte_id,
+    ...(ctx.comision ? { comision: ctx.comision } : {}),
   };
 }
 

@@ -55,3 +55,7 @@ class MoodleSyncRequest(_Schema):
 
 class VaciarPadronResponse(_Schema):
     versiones_eliminadas: int
+
+
+class ActualizarComisionRequest(_Schema):
+    comision: str = Field(min_length=1, max_length=100)

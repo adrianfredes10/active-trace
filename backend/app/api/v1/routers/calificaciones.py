@@ -79,6 +79,7 @@ async def importar_calificaciones(
     materia_id: Annotated[uuid.UUID, Form(...)],
     cohorte_id: Annotated[uuid.UUID, Form(...)],
     actividades: Annotated[str, Form(...)],
+    comision: Annotated[str | None, Form()] = None,
     file: UploadFile = File(...),
     user: Annotated[CurrentUser, Depends(get_current_user)] = ...,
     db: Annotated[AsyncSession, Depends(get_db)] = ...,
@@ -98,6 +99,8 @@ async def importar_calificaciones(
             cohorte_id=cohorte_id,
             actividades_seleccionadas=actividades_list,
             content=content,
+            user=user,
+            comision_activa=comision,
         )
     except (PadronParseError, ValueError) as exc:
         raise HTTPException(
@@ -188,6 +191,7 @@ async def preview_finalizacion(
     asignacion_id: Annotated[uuid.UUID, Form(...)],
     materia_id: Annotated[uuid.UUID, Form(...)],
     cohorte_id: Annotated[uuid.UUID, Form(...)],
+    comision: Annotated[str | None, Form()] = None,
     file: UploadFile = File(...),
     user: Annotated[CurrentUser, Depends(get_current_user)] = ...,
     db: Annotated[AsyncSession, Depends(get_db)] = ...,
@@ -200,6 +204,8 @@ async def preview_finalizacion(
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             content=content,
+            user=user,
+            comision_activa=comision,
         )
     except PadronParseError as exc:
         raise HTTPException(

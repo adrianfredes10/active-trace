@@ -49,6 +49,7 @@ async def atrasados(
     cohorte_id: uuid.UUID,
     user: Annotated[CurrentUser, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    comision: str | None = None,
 ) -> AtrasadosResponse:
     try:
         data = await _svc(db, user).listar_atrasados(
@@ -56,6 +57,7 @@ async def atrasados(
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision,
         )
     except (ValueError, PermissionError) as exc:
         raise _http_error(exc) from exc
@@ -73,6 +75,7 @@ async def ranking(
     cohorte_id: uuid.UUID,
     user: Annotated[CurrentUser, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    comision: str | None = None,
 ) -> RankingResponse:
     try:
         items = await _svc(db, user).ranking(
@@ -80,6 +83,7 @@ async def ranking(
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision,
         )
     except (ValueError, PermissionError) as exc:
         raise _http_error(exc) from exc
@@ -93,6 +97,7 @@ async def reporte_rapido(
     cohorte_id: uuid.UUID,
     user: Annotated[CurrentUser, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    comision: str | None = None,
 ) -> ReporteRapidoResponse:
     try:
         data = await _svc(db, user).reporte_rapido(
@@ -100,6 +105,7 @@ async def reporte_rapido(
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision,
         )
     except (ValueError, PermissionError) as exc:
         raise _http_error(exc) from exc
@@ -132,6 +138,7 @@ async def notas_finales(
     cohorte_id: uuid.UUID,
     user: Annotated[CurrentUser, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    comision: str | None = None,
 ) -> NotasFinalesResponse:
     try:
         data = await _svc(db, user).notas_finales(
@@ -139,6 +146,7 @@ async def notas_finales(
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision,
         )
     except (ValueError, PermissionError) as exc:
         raise _http_error(exc) from exc
@@ -155,6 +163,7 @@ async def sin_corregir(
     cohorte_id: uuid.UUID,
     user: Annotated[CurrentUser, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    comision: str | None = None,
 ) -> SinCorregirResponse:
     try:
         items = await _svc(db, user).sin_corregir(
@@ -162,6 +171,7 @@ async def sin_corregir(
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision,
         )
     except (ValueError, PermissionError) as exc:
         raise _http_error(exc) from exc
@@ -177,6 +187,7 @@ async def exportar_sin_corregir(
     cohorte_id: uuid.UUID,
     user: Annotated[CurrentUser, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    comision: str | None = None,
 ) -> Response:
     svc = _svc(db, user)
     try:
@@ -185,6 +196,7 @@ async def exportar_sin_corregir(
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision,
         )
     except (ValueError, PermissionError) as exc:
         raise _http_error(exc) from exc

@@ -19,6 +19,7 @@ TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000c11")
 SLUG = "c11-api"
 EMAIL_PROF = "prof@c11.example.com"
 EMAIL_COORD = "coord@c11.example.com"
+EMAIL_ADMIN = "admin@c11.example.com"
 PW = "S3cret!pass"
 
 CSV_CALIF = b"""email,nombre,apellidos,TP1 (Real),Reflexion
@@ -37,7 +38,7 @@ Pedro,Lopez,pedro@example.com,B,Sur
 """
 
 
-async def _seed(api_client) -> dict:
+async def _seed(api_client, *, comisiones: list[str] | None = None) -> dict:
     factory = get_session_factory()
     async with factory() as session:
         session.add(Tenant(id=TENANT_ID, nombre="C11", slug=SLUG))
@@ -48,6 +49,7 @@ async def _seed(api_client) -> dict:
         for email, role in [
             (EMAIL_PROF, "PROFESOR"),
             (EMAIL_COORD, "COORDINADOR"),
+            (EMAIL_ADMIN, "ADMIN"),
         ]:
             u = await UsuarioRepository(session, TENANT_ID).add(
                 Usuario(
@@ -90,6 +92,7 @@ async def _seed(api_client) -> dict:
             materia_id=materia.id,
             carrera_id=carrera.id,
             cohorte_id=cohorte.id,
+            comisiones=comisiones if comisiones is not None else [],
             desde=date(2026, 3, 1),
         )
         session.add(asig)
@@ -245,6 +248,140 @@ async def test_monitor_filtro_comision(api_client) -> None:
     items = resp.json()["items"]
     assert len(items) == 1
     assert items[0]["email"] == "ana@example.com"
+
+
+@pytest.mark.asyncio
+async def test_profesor_solo_ve_su_comision_en_analisis(api_client) -> None:
+    """1.1 — PROFESOR con comisiones=['A'] no ve alumnos de comisión B."""
+    ctx = await _seed(api_client, comisiones=["A"])
+    headers = await _headers(api_client)
+    await _importar_padron(api_client, ctx, headers)
+    await _importar_calif(api_client, ctx, headers)
+
+    params = {
+        "asignacion_id": ctx["asig_id"],
+        "materia_id": ctx["materia_id"],
+        "cohorte_id": ctx["cohorte_id"],
+    }
+
+    atrasados = await api_client.get(
+        "/api/analisis/atrasados", params=params, headers=headers
+    )
+    assert atrasados.status_code == 200
+    body = atrasados.json()
+    assert body["total_alumnos"] == 1
+    emails_atrasados = {i["email"] for i in body["items"]}
+    assert "pedro@example.com" not in emails_atrasados
+
+    ranking = await api_client.get(
+        "/api/analisis/ranking", params=params, headers=headers
+    )
+    assert ranking.status_code == 200
+    emails_ranking = {i["email"] for i in ranking.json()["items"]}
+    assert "ana@example.com" in emails_ranking
+    assert "pedro@example.com" not in emails_ranking
+
+    await api_client.put(
+        "/api/analisis/agrupaciones",
+        json={
+            "asignacion_id": ctx["asig_id"],
+            "materia_id": ctx["materia_id"],
+            "agrupaciones": [{"nombre": "Parcial 1", "actividades": ["TP1 (Real)"]}],
+        },
+        headers=headers,
+    )
+    notas = await api_client.get(
+        "/api/analisis/notas-finales", params=params, headers=headers
+    )
+    assert notas.status_code == 200
+    emails_notas = {i["email"] for i in notas.json()["items"]}
+    assert emails_notas == {"ana@example.com"}
+
+    sin_corregir = await api_client.get(
+        "/api/analisis/sin-corregir", params=params, headers=headers
+    )
+    assert sin_corregir.status_code == 200
+    emails_sc = {i["email"] for i in sin_corregir.json()["items"]}
+    assert "pedro@example.com" not in emails_sc
+
+
+@pytest.mark.asyncio
+async def test_profesor_comisiones_vacio_ve_todo(api_client) -> None:
+    """1.2 — comisiones=[] retrocompatible: ve todas las comisiones."""
+    ctx = await _seed(api_client, comisiones=[])
+    headers = await _headers(api_client)
+    await _importar_padron(api_client, ctx, headers)
+    await _importar_calif(api_client, ctx, headers)
+
+    resp = await api_client.get(
+        "/api/analisis/atrasados",
+        params={
+            "asignacion_id": ctx["asig_id"],
+            "materia_id": ctx["materia_id"],
+            "cohorte_id": ctx["cohorte_id"],
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["total_alumnos"] == 2
+
+
+@pytest.mark.asyncio
+async def test_coordinador_ve_todas_las_comisiones(api_client) -> None:
+    """1.3 — COORDINADOR sin restricción por comisión de la asignación."""
+    ctx = await _seed(api_client, comisiones=["A"])
+    headers_prof = await _headers(api_client)
+    headers_coord = await _headers(api_client, EMAIL_COORD)
+    await _importar_padron(api_client, ctx, headers_prof)
+    await _importar_calif(api_client, ctx, headers_prof)
+
+    params = {
+        "asignacion_id": ctx["asig_id"],
+        "materia_id": ctx["materia_id"],
+        "cohorte_id": ctx["cohorte_id"],
+    }
+    resp = await api_client.get(
+        "/api/analisis/atrasados", params=params, headers=headers_coord
+    )
+    assert resp.status_code == 200
+    assert resp.json()["total_alumnos"] == 2
+    emails = {i["email"] for i in resp.json()["items"]}
+    assert "pedro@example.com" in emails
+
+
+@pytest.mark.asyncio
+async def test_entrada_sin_comision_no_visible_para_profesor(api_client) -> None:
+    """5.2 — comision=null solo visible para roles amplios, no PROFESOR restringido."""
+    ctx = await _seed(api_client, comisiones=["A"])
+    headers_prof = await _headers(api_client)
+    headers_coord = await _headers(api_client, EMAIL_COORD)
+
+    padron_sin_comision = b"""nombre,apellidos,email,comision,regional
+Luis,Martinez,luis@example.com,,Norte
+Ana,Garcia,ana@example.com,A,Norte
+"""
+    await api_client.post(
+        "/api/padron/importar",
+        data={"materia_id": ctx["materia_id"], "cohorte_id": ctx["cohorte_id"]},
+        files={"file": ("padron.csv", io.BytesIO(padron_sin_comision), "text/csv")},
+        headers=headers_coord,
+    )
+
+    params = {
+        "asignacion_id": ctx["asig_id"],
+        "materia_id": ctx["materia_id"],
+        "cohorte_id": ctx["cohorte_id"],
+    }
+    prof_resp = await api_client.get(
+        "/api/analisis/atrasados", params=params, headers=headers_prof
+    )
+    prof_emails = {i["email"] for i in prof_resp.json()["items"]}
+    assert "luis@example.com" not in prof_emails
+
+    coord_resp = await api_client.get(
+        "/api/analisis/atrasados", params=params, headers=headers_coord
+    )
+    assert coord_resp.json()["total_alumnos"] == 2
 
 
 @pytest.mark.asyncio

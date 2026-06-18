@@ -28,9 +28,14 @@ import {
   persistSession,
 } from "@/shared/services/tokenStorage";
 
+type User = {
+  email: string;
+};
+
 type AuthContextValue = {
   isAuthenticated: boolean;
   isBootstrapping: boolean;
+  user: User | null;
   login: (payload: LoginPayload) => Promise<{ requires2fa: boolean; challengeToken?: string }>;
   complete2fa: (challengeToken: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -42,10 +47,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   const markLoggedOut = useCallback(() => {
     wipeSession();
+    sessionStorage.removeItem("activia.email");
     setIsAuthenticated(false);
+    setUser(null);
     queryClient.clear();
   }, [queryClient]);
 
@@ -55,6 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const restored = await tryRestoreSession();
       if (!active) return;
       setIsAuthenticated(restored);
+      if (restored) {
+        const storedEmail = sessionStorage.getItem("activia.email") || "admin@demo.local";
+        setUser({ email: storedEmail });
+      }
       setIsBootstrapping(false);
     })();
     const unsubscribe = onSessionExpired(markLoggedOut);
@@ -67,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (payload: LoginPayload) => {
     const result = await loginRequest(payload);
     if (result.requires_2fa) {
+      sessionStorage.setItem("activia.email", payload.email);
       return {
         requires2fa: true,
         challengeToken: result.challenge_token ?? undefined,
@@ -75,6 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!result.access_token || !result.refresh_token) {
       throw new Error("Respuesta de login inválida");
     }
+    sessionStorage.setItem("activia.email", payload.email);
+    setUser({ email: payload.email });
     setSessionTokens(result.access_token, result.refresh_token);
     setIsAuthenticated(true);
     return { requires2fa: false };
@@ -83,6 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const complete2fa = useCallback(async (challengeToken: string, code: string) => {
     const tokens = await verify2faRequest({ challenge_token: challengeToken, code });
     setSessionTokens(tokens.access_token, tokens.refresh_token);
+    const storedEmail = sessionStorage.getItem("activia.email") || "usuario@demo.local";
+    setUser({ email: storedEmail });
     setIsAuthenticated(true);
   }, []);
 
@@ -99,8 +116,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [markLoggedOut]);
 
   const value = useMemo(
-    () => ({ isAuthenticated, isBootstrapping, login, complete2fa, logout }),
-    [isAuthenticated, isBootstrapping, login, complete2fa, logout],
+    () => ({ isAuthenticated, isBootstrapping, user, login, complete2fa, logout }),
+    [isAuthenticated, isBootstrapping, user, login, complete2fa, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

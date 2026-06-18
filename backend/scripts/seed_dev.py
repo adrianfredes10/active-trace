@@ -32,7 +32,8 @@ DEMO_EMAIL = "admin@demo.local"
 DEMO_PASSWORD = "Admin1234!"
 
 DEMO_USERS = (
-    ("prof@demo.local", "Prof1234!", "Ana", "Profesora", "PROFESOR"),
+    ("prof-a@demo.local", "Prof1234!", "Ana", "Profesora A", "PROFESOR"),
+    ("prof-b@demo.local", "Prof1234!", "Luis", "Profesor B", "PROFESOR"),
     ("coord@demo.local", "Coord1234!", "Luis", "Coordinador", "COORDINADOR"),
 )
 
@@ -151,7 +152,8 @@ async def seed_dev() -> None:
     print("\n--- Login dev ---")
     print(f"  tenant:   {DEMO_SLUG}")
     print(f"  admin:    {DEMO_EMAIL} / {DEMO_PASSWORD}")
-    print(f"  prof:     prof@demo.local / Prof1234!")
+    print(f"  prof-a:   prof-a@demo.local / Prof1234!  (comisión A)")
+    print(f"  prof-b:   prof-b@demo.local / Prof1234!  (comisión B)")
     print(f"  coord:    coord@demo.local / Coord1234!")
     print(f"  finanzas: finanzas@demo.local / Fin1234!")
     print(f"  API:      http://localhost:8000")

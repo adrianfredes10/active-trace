@@ -34,6 +34,38 @@ logger = logging.getLogger(__name__)
 _ROLES_AMPLIOS = frozenset({"COORDINADOR", "ADMIN"})
 
 
+def comisiones_permitidas(
+    asignacion: Asignacion, user: CurrentUser
+) -> list[str] | None:
+    """None = sin restricción por comisión (roles amplios o lista vacía)."""
+    if _ROLES_AMPLIOS.intersection(user.roles):
+        return None
+    comisiones = list(asignacion.comisiones or [])
+    if not comisiones:
+        return None
+    return comisiones
+
+
+def filtrar_entradas_por_comision(
+    entradas: list[EntradaPadron], permitidas: list[str] | None
+) -> list[EntradaPadron]:
+    if permitidas is None:
+        return entradas
+    return [e for e in entradas if e.comision in permitidas]
+
+
+def filtrar_comision_activa(
+    entradas: list[EntradaPadron],
+    comision_activa: str | None,
+    permitidas: list[str] | None,
+) -> list[EntradaPadron]:
+    if not comision_activa:
+        return entradas
+    if permitidas is not None and comision_activa not in permitidas:
+        raise PermissionError("Comisión no permitida para esta asignación")
+    return [e for e in entradas if e.comision == comision_activa]
+
+
 class AnalisisService:
     def __init__(self, session: AsyncSession, tenant_id: uuid.UUID) -> None:
         self._session = session
@@ -77,9 +109,11 @@ class AnalisisService:
         asignacion_id: uuid.UUID | None = None,
         importado_desde: datetime | None = None,
         importado_hasta: datetime | None = None,
+        comision_activa: str | None = None,
     ) -> tuple[list[EntradaPadron], list[str], dict[uuid.UUID, dict[str, NotaAlumno]]]:
+        asignacion: Asignacion | None = None
         if asignacion_id is not None:
-            await self._resolver_asignacion(asignacion_id, user)
+            asignacion = await self._resolver_asignacion(asignacion_id, user)
             calificaciones = list(
                 await self._calificaciones.list_by_materia_cohorte(
                     materia_id,
@@ -104,6 +138,12 @@ class AnalisisService:
             actividades = sorted({c.actividad for c in calificaciones})
 
         entradas = await self._padron.list_entradas_activas(materia_id, cohorte_id)
+        if asignacion is not None:
+            permitidas = comisiones_permitidas(asignacion, user)
+            entradas = filtrar_entradas_por_comision(entradas, permitidas)
+            entradas = filtrar_comision_activa(entradas, comision_activa, permitidas)
+        elif comision_activa:
+            entradas = [e for e in entradas if e.comision == comision_activa]
         notas_map = self._mapa_notas(calificaciones)
         if asignacion_id is None and calificaciones:
             notas_map = self._fusionar_por_entrada(calificaciones)
@@ -134,6 +174,7 @@ class AnalisisService:
         user: CurrentUser,
         importado_desde: datetime | None = None,
         importado_hasta: datetime | None = None,
+        comision_activa: str | None = None,
     ) -> tuple[list[EntradaPadron], list[str], dict[uuid.UUID, dict[str, NotaAlumno]]]:
         return await self._cargar_datos(
             materia_id=materia_id,
@@ -142,6 +183,7 @@ class AnalisisService:
             asignacion_id=asignacion_id,
             importado_desde=importado_desde,
             importado_hasta=importado_hasta,
+            comision_activa=comision_activa,
         )
 
     async def listar_atrasados(
@@ -151,12 +193,14 @@ class AnalisisService:
         materia_id: uuid.UUID,
         cohorte_id: uuid.UUID,
         user: CurrentUser,
+        comision_activa: str | None = None,
     ) -> dict:
         entradas, actividades, notas_map = await self._cargar_contexto(
             asignacion_id=asignacion_id,
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision_activa,
         )
         items = []
         for entrada in entradas:
@@ -186,12 +230,14 @@ class AnalisisService:
         materia_id: uuid.UUID,
         cohorte_id: uuid.UUID,
         user: CurrentUser,
+        comision_activa: str | None = None,
     ) -> list[dict]:
         entradas, _, notas_map = await self._cargar_contexto(
             asignacion_id=asignacion_id,
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision_activa,
         )
         entrada_por_email = {e.email.lower(): e for e in entradas}
         pares = [
@@ -220,12 +266,14 @@ class AnalisisService:
         materia_id: uuid.UUID,
         cohorte_id: uuid.UUID,
         user: CurrentUser,
+        comision_activa: str | None = None,
     ) -> dict:
         atrasados = await self.listar_atrasados(
             asignacion_id=asignacion_id,
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision_activa,
         )
         total_cals = await self._calificaciones.count_by_asignacion(asignacion_id)
         aprobadas = 0
@@ -281,6 +329,7 @@ class AnalisisService:
         materia_id: uuid.UUID,
         cohorte_id: uuid.UUID,
         user: CurrentUser,
+        comision_activa: str | None = None,
     ) -> dict:
         await self._resolver_asignacion(asignacion_id, user)
         umbral = await self._umbrales.get_by_asignacion(asignacion_id)
@@ -290,6 +339,7 @@ class AnalisisService:
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision_activa,
         )
         items = []
         for entrada in entradas:
@@ -317,12 +367,14 @@ class AnalisisService:
         materia_id: uuid.UUID,
         cohorte_id: uuid.UUID,
         user: CurrentUser,
+        comision_activa: str | None = None,
     ) -> list[dict]:
         entradas, actividades, notas_map = await self._cargar_contexto(
             asignacion_id=asignacion_id,
             materia_id=materia_id,
             cohorte_id=cohorte_id,
             user=user,
+            comision_activa=comision_activa,
         )
         textuales = [a for a in actividades if es_actividad_textual(a)]
         umbral = await self._umbrales.get_by_asignacion(asignacion_id)

@@ -2,19 +2,24 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchMisEquipos } from "@/features/comision/services/equipoService";
-import type { AsignacionItem, ComisionContexto } from "@/features/comision/types/comision";
+import type { ComisionContexto } from "@/features/comision/types/comision";
+import {
+  buildComisionWorkspaces,
+  type ComisionWorkspace,
+} from "@/features/comision/utils/comisionWorkspaces";
 
 type ComisionContextValue = {
-  equipos: AsignacionItem[];
+  workspaces: ComisionWorkspace[];
   isLoading: boolean;
-  selected: AsignacionItem | null;
-  setSelectedId: (id: string) => void;
+  selected: ComisionWorkspace | null;
+  setWorkspaceKey: (key: string) => void;
   contexto: ComisionContexto | null;
 };
 
 const ComisionContext = createContext<ComisionContextValue | null>(null);
 
-function toContexto(item: AsignacionItem): ComisionContexto | null {
+function toContexto(workspace: ComisionWorkspace): ComisionContexto | null {
+  const item = workspace.asignacion;
   if (!item.materia_id || !item.cohorte_id) {
     return null;
   }
@@ -22,6 +27,7 @@ function toContexto(item: AsignacionItem): ComisionContexto | null {
     asignacion_id: item.id,
     materia_id: item.materia_id,
     cohorte_id: item.cohorte_id,
+    comision: workspace.comision,
   };
 }
 
@@ -31,30 +37,27 @@ export function ComisionProvider({ children }: { children: ReactNode }) {
     queryFn: () => fetchMisEquipos(true),
   });
 
-  const equipos = useMemo(
-    () => (data?.items ?? []).filter((e) => e.materia_id && e.cohorte_id),
-    [data],
-  );
+  const workspaces = useMemo(() => {
+    const equipos = (data?.items ?? []).filter((e) => e.materia_id && e.cohorte_id);
+    return buildComisionWorkspaces(equipos);
+  }, [data]);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [workspaceKey, setWorkspaceKey] = useState<string | null>(null);
 
   const selected = useMemo(() => {
-    if (equipos.length === 0) {
-      return null;
-    }
-    const found = equipos.find((e) => e.id === selectedId);
-    return found ?? equipos[0];
-  }, [equipos, selectedId]);
+    if (workspaces.length === 0) return null;
+    return workspaces.find((w) => w.key === workspaceKey) ?? workspaces[0];
+  }, [workspaces, workspaceKey]);
 
   const value = useMemo<ComisionContextValue>(
     () => ({
-      equipos,
+      workspaces,
       isLoading,
       selected,
-      setSelectedId: setSelectedId,
+      setWorkspaceKey,
       contexto: selected ? toContexto(selected) : null,
     }),
-    [equipos, isLoading, selected],
+    [workspaces, isLoading, selected],
   );
 
   return <ComisionContext.Provider value={value}>{children}</ComisionContext.Provider>;

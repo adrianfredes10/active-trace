@@ -7,16 +7,24 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.dependencies import CurrentUser
+from app.models.asignacion import Asignacion
 from app.models.calificacion import (
     UMBRAL_PCT_DEFECTO,
     VALORES_APROBATORIOS_DEFECTO,
-    Calificacion,
     OrigenCalificacion,
     UmbralMateria,
 )
+from app.models.calificacion import Calificacion
+from app.repositories.asignacion_repository import AsignacionRepository
 from app.repositories.calificacion_repository import (
     CalificacionRepository,
     UmbralMateriaRepository,
+)
+from app.services.analisis_service import (
+    comisiones_permitidas,
+    filtrar_comision_activa,
+    filtrar_entradas_por_comision,
 )
 from app.services.calificacion_parser import (
     PreviewCalificaciones,
@@ -36,6 +44,7 @@ class CalificacionService:
         self._calificaciones = CalificacionRepository(session, tenant_id)
         self._umbrales = UmbralMateriaRepository(session, tenant_id)
         self._padron = PadronService(session, tenant_id)
+        self._asignaciones = AsignacionRepository(session, tenant_id)
 
     def preview_csv(self, content: bytes) -> PreviewCalificaciones:
         return preview_calificaciones_csv(content)
@@ -47,9 +56,18 @@ class CalificacionService:
         return umbral.umbral_pct, list(umbral.valores_aprobatorios or VALORES_APROBATORIOS_DEFECTO)
 
     async def _mapa_email_entrada(
-        self, materia_id: uuid.UUID, cohorte_id: uuid.UUID
+        self,
+        materia_id: uuid.UUID,
+        cohorte_id: uuid.UUID,
+        *,
+        asignacion: Asignacion,
+        user: CurrentUser,
+        comision_activa: str | None = None,
     ) -> dict[str, uuid.UUID]:
         entradas = await self._padron.list_entradas_activas(materia_id, cohorte_id)
+        permitidas = comisiones_permitidas(asignacion, user)
+        entradas = filtrar_entradas_por_comision(entradas, permitidas)
+        entradas = filtrar_comision_activa(entradas, comision_activa, permitidas)
         return {e.email.lower(): e.id for e in entradas}
 
     async def importar_calificaciones(
@@ -60,14 +78,22 @@ class CalificacionService:
         cohorte_id: uuid.UUID,
         actividades_seleccionadas: list[str],
         content: bytes,
+        user: CurrentUser,
+        comision_activa: str | None = None,
     ) -> list[Calificacion]:
+        asignacion = await self._asignaciones.get(asignacion_id)
+        if asignacion is None:
+            raise ValueError("Asignación no encontrada")
+
         preview = preview_calificaciones_csv(content)
         act_map = {a.nombre: a for a in preview.actividades}
         for nombre in actividades_seleccionadas:
             if nombre not in act_map:
                 raise ValueError(f"Actividad no encontrada en archivo: {nombre}")
 
-        email_map = await self._mapa_email_entrada(materia_id, cohorte_id)
+        email_map = await self._mapa_email_entrada(
+            materia_id, cohorte_id, asignacion=asignacion, user=user, comision_activa=comision_activa
+        )
         umbral_pct, valores_aprob = await self._resolver_umbral(asignacion_id)
         ahora = datetime.now(timezone.utc)
         guardadas: list[Calificacion] = []
@@ -156,10 +182,17 @@ class CalificacionService:
         materia_id: uuid.UUID,
         cohorte_id: uuid.UUID,
         content: bytes,
+        user: CurrentUser,
+        comision_activa: str | None = None,
     ) -> list[dict[str, str]]:
         """F1.2: entregas completadas sin calificación textual registrada."""
+        asignacion = await self._asignaciones.get(asignacion_id)
+        if asignacion is None:
+            raise ValueError("Asignación no encontrada")
         finalizadas = preview_finalizacion_csv(content)
-        email_map = await self._mapa_email_entrada(materia_id, cohorte_id)
+        email_map = await self._mapa_email_entrada(
+            materia_id, cohorte_id, asignacion=asignacion, user=user, comision_activa=comision_activa
+        )
         calificaciones = await self._calificaciones.list_by_asignacion(asignacion_id)
         entradas_con_nota_textual: set[tuple[uuid.UUID, str]] = {
             (c.entrada_padron_id, c.actividad)

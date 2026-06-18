@@ -7,10 +7,11 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from app.core.audit_actions import AuditAction
 from app.core.database import get_session_factory
 from app.core.security import email_blind_index, hash_password
 from app.integrations.moodle_ws import MoodleUnavailable
-from app.models import Tenant, Usuario
+from app.models import AuditLog, Tenant, Usuario
 from app.models.estructura import Carrera, Cohorte, EntidadEstado, Materia
 from app.repositories.padron_repository import VersionPadronRepository
 from app.repositories.rbac_repository import RolRepository, UsuarioRolRepository
@@ -22,6 +23,7 @@ from app.services.rbac_seed import seed_tenant_rbac
 TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000c09")
 SLUG = "c09-api"
 EMAIL_COORD = "coord@c09.example.com"
+EMAIL_ADMIN = "admin@c09.example.com"
 PW = "S3cret!pass"
 
 CSV_SAMPLE = b"""nombre,apellidos,email,comision
@@ -43,9 +45,17 @@ async def _seed(api_client) -> dict:
                 password_hash=hash_password(PW),
             )
         )
-        rol = await RolRepository(session, TENANT_ID).get_by_codigo("COORDINADOR")
-        assert rol is not None
-        await UsuarioRolRepository(session, TENANT_ID).assign_role(coord.id, rol.id)
+        admin = await UsuarioRepository(session, TENANT_ID).add(
+            Usuario(
+                email=EMAIL_ADMIN,
+                email_hash=email_blind_index(EMAIL_ADMIN),
+                password_hash=hash_password(PW),
+            )
+        )
+        for user, role_code in [(coord, "COORDINADOR"), (admin, "ADMIN")]:
+            rol = await RolRepository(session, TENANT_ID).get_by_codigo(role_code)
+            assert rol is not None
+            await UsuarioRolRepository(session, TENANT_ID).assign_role(user.id, rol.id)
 
         carrera = Carrera(
             tenant_id=TENANT_ID, codigo="TUP", nombre="TUP", estado=EntidadEstado.ACTIVA
@@ -79,17 +89,17 @@ async def _seed(api_client) -> dict:
     }
 
 
-async def _login(api_client) -> str:
+async def _login(api_client, email: str = EMAIL_COORD) -> str:
     resp = await api_client.post(
         "/api/auth/login",
-        json={"tenant_slug": SLUG, "email": EMAIL_COORD, "password": PW},
+        json={"tenant_slug": SLUG, "email": email, "password": PW},
     )
     assert resp.status_code == 200
     return resp.json()["access_token"]
 
 
-async def _headers(api_client) -> dict:
-    return {"Authorization": f"Bearer {await _login(api_client)}"}
+async def _headers(api_client, email: str = EMAIL_COORD) -> dict:
+    return {"Authorization": f"Bearer {await _login(api_client, email)}"}
 
 
 def test_parse_csv_ok() -> None:
@@ -169,6 +179,43 @@ async def test_vaciar_padron_scope_usuario(api_client, session) -> None:
         uuid.UUID(ctx["materia_id"]), uuid.UUID(ctx["cohorte_id"])
     )
     assert activa is None
+
+
+@pytest.mark.asyncio
+async def test_patch_comision_entrada_audita(api_client, session) -> None:
+    """1.6 — PATCH comisión con estructura:gestionar y auditoría."""
+    ctx = await _seed(api_client)
+    headers = await _headers(api_client)
+    admin_headers = await _headers(api_client, EMAIL_ADMIN)
+
+    imported = await api_client.post(
+        "/api/padron/importar",
+        data={"materia_id": ctx["materia_id"], "cohorte_id": ctx["cohorte_id"]},
+        files={"file": ("padron.csv", io.BytesIO(CSV_SAMPLE), "text/csv")},
+        headers=headers,
+    )
+    entrada_id = imported.json()["entradas"][0]["id"]
+
+    patch = await api_client.patch(
+        f"/api/padron/entradas/{entrada_id}",
+        json={"comision": "C"},
+        headers=admin_headers,
+    )
+    assert patch.status_code == 200
+    assert patch.json()["comision"] == "C"
+
+    from sqlalchemy import select
+
+    result = await session.execute(
+        select(AuditLog)
+        .where(AuditLog.tenant_id == TENANT_ID)
+        .where(AuditLog.accion == AuditAction.PADRON_ENTRADA_MODIFICAR)
+        .order_by(AuditLog.fecha_hora.desc())
+    )
+    log = result.scalars().first()
+    assert log is not None
+    assert log.detalle.get("entrada_id") == entrada_id
+    assert log.detalle.get("comision") == "C"
 
 
 @pytest.mark.asyncio

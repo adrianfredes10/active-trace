@@ -183,6 +183,8 @@ async def _ensure_asignacion(
         session.add(asig)
         await session.flush()
         print(f"Asignación {rol.value} creada para usuario {usuario_id}")
+    else:
+        asig.comisiones = comisiones
     return asig
 
 
@@ -515,22 +517,33 @@ async def seed_demo_ecosystem(session: AsyncSession, tenant_id: uuid.UUID) -> No
     materia = await _ensure_materia(session, tenant_id)
     await _ensure_finanzas(session, tenant_id)
 
-    prof = await _get_user(session, tenant_id, "prof@demo.local")
+    prof_a = await _get_user(session, tenant_id, "prof-a@demo.local")
+    prof_b = await _get_user(session, tenant_id, "prof-b@demo.local")
     coord = await _get_user(session, tenant_id, "coord@demo.local")
     admin = await _get_user(session, tenant_id, "admin@demo.local")
-    if prof is None or coord is None or admin is None:
+    if prof_a is None or prof_b is None or coord is None or admin is None:
         print("Faltan usuarios demo — omitiendo asignaciones")
         return
 
-    asig_prof = await _ensure_asignacion(
+    asig_prof_a = await _ensure_asignacion(
         session,
         tenant_id,
-        usuario_id=prof.id,
+        usuario_id=prof_a.id,
         rol=RolAsignacion.profesor,
         materia_id=materia.id,
         carrera_id=carrera.id,
         cohorte_id=cohorte.id,
-        comisiones=["A", "B"],
+        comisiones=["A"],
+    )
+    await _ensure_asignacion(
+        session,
+        tenant_id,
+        usuario_id=prof_b.id,
+        rol=RolAsignacion.profesor,
+        materia_id=materia.id,
+        carrera_id=carrera.id,
+        cohorte_id=cohorte.id,
+        comisiones=["B"],
     )
     await _ensure_asignacion(
         session,
@@ -548,17 +561,17 @@ async def seed_demo_ecosystem(session: AsyncSession, tenant_id: uuid.UUID) -> No
         tenant_id,
         materia_id=materia.id,
         cohorte_id=cohorte.id,
-        cargado_por=prof.id,
+        cargado_por=prof_a.id,
     )
     await _ensure_calificaciones(
         session,
         tenant_id,
-        asignacion_id=asig_prof.id,
+        asignacion_id=asig_prof_a.id,
         materia_id=materia.id,
         entradas=entradas,
     )
     await _ensure_umbral(
-        session, tenant_id, asignacion_id=asig_prof.id, materia_id=materia.id
+        session, tenant_id, asignacion_id=asig_prof_a.id, materia_id=materia.id
     )
     await _ensure_aviso(
         session, tenant_id, materia_id=materia.id, cohorte_id=cohorte.id
@@ -567,7 +580,7 @@ async def seed_demo_ecosystem(session: AsyncSession, tenant_id: uuid.UUID) -> No
         session,
         tenant_id,
         materia_id=materia.id,
-        asignado_a=prof.id,
+        asignado_a=prof_a.id,
         asignado_por=coord.id,
     )
     await _ensure_grilla_salarial(session, tenant_id)

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.audit_actions import AuditAction
 from app.core.dependencies import CurrentUser, get_current_user, get_db
 from app.core.permissions import require_permission
+from app.repositories.asignacion_repository import AsignacionRepository
 from app.schemas.comunicacion import (
     AprobarComunicacionResponse,
     CancelarComunicacionResponse,
@@ -19,10 +20,55 @@ from app.schemas.comunicacion import (
     ComunicacionResponse,
     LoteComunicacionResponse,
 )
+from app.services.analisis_service import comisiones_permitidas
 from app.services.audit_service import AuditContext, AuditService
 from app.services.comunicacion_service import ComunicacionService
+from app.services.padron_service import PadronService
 
 router = APIRouter(prefix="/api/comunicaciones", tags=["comunicaciones"])
+
+_ROLES_AMPLIOS = frozenset({"COORDINADOR", "ADMIN"})
+
+
+async def _validar_destinatarios_comision(
+    db: AsyncSession,
+    user: CurrentUser,
+    materia_id: uuid.UUID,
+    destinatarios: list[dict],
+) -> None:
+    if _ROLES_AMPLIOS.intersection(user.roles):
+        return
+
+    asignaciones = [
+        a
+        for a in await AsignacionRepository(db, user.tenant_id).list_vigentes_by_usuario(
+            user.id
+        )
+        if a.materia_id == materia_id
+    ]
+    if not asignaciones:
+        return
+
+    if any(comisiones_permitidas(a, user) is None for a in asignaciones):
+        return
+
+    padron = PadronService(db, user.tenant_id)
+    allowed_emails: set[str] = set()
+    for asignacion in asignaciones:
+        permitidas = comisiones_permitidas(asignacion, user)
+        if permitidas is None or asignacion.cohorte_id is None:
+            continue
+        entradas = await padron.list_entradas_activas(materia_id, asignacion.cohorte_id)
+        for entrada in entradas:
+            if entrada.comision in permitidas:
+                allowed_emails.add(entrada.email.lower())
+
+    for destinatario in destinatarios:
+        email = destinatario["email"].lower()
+        if email not in allowed_emails:
+            raise PermissionError(
+                "Destinatario fuera de las comisiones permitidas para esta materia"
+            )
 
 
 def _item_response(item: object) -> ComunicacionResponse:
@@ -77,8 +123,14 @@ async def enviar_comunicaciones(
     user: Annotated[CurrentUser, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ComunicacionEnviarResponse:
-    svc = ComunicacionService(db, user.tenant_id)
     try:
+        await _validar_destinatarios_comision(
+            db,
+            user,
+            body.materia_id,
+            [d.model_dump() for d in body.destinatarios],
+        )
+        svc = ComunicacionService(db, user.tenant_id)
         resultado = await svc.encolar(
             user=user,
             materia_id=body.materia_id,
@@ -87,7 +139,7 @@ async def enviar_comunicaciones(
             destinatarios=[d.model_dump() for d in body.destinatarios],
             confirmo_preview=body.confirmo_preview,
         )
-    except ValueError as exc:
+    except (ValueError, PermissionError) as exc:
         raise _http_error(exc) from exc
 
     ctx = AuditContext.from_user(

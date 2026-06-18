@@ -11,7 +11,9 @@ from app.core.config import Settings, get_settings
 from app.core.dependencies import CurrentUser, get_current_user, get_db
 from app.core.permissions import require_permission
 from app.integrations.moodle_ws import MoodleUnavailable, MoodleWSClient
+from app.repositories.padron_repository import EntradaPadronRepository
 from app.schemas.padron import (
+    ActualizarComisionRequest,
     EntradaPadronResponse,
     FilaPadronPreview,
     MoodleSyncRequest,
@@ -205,3 +207,42 @@ async def vaciar_datos_materia(
     count = await svc.vaciar_datos_materia(materia_id, user.id)
     await db.commit()
     return VaciarPadronResponse(versiones_eliminadas=count)
+
+
+@router.patch(
+    "/entradas/{entrada_id}",
+    response_model=EntradaPadronResponse,
+    dependencies=[Depends(require_permission("estructura:gestionar"))],
+)
+async def actualizar_comision_entrada(
+    entrada_id: uuid.UUID,
+    body: ActualizarComisionRequest,
+    request: Request,
+    user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> EntradaPadronResponse:
+    repo = EntradaPadronRepository(db, user.tenant_id)
+    entrada = await repo.get(entrada_id)
+    if entrada is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entrada no encontrada")
+
+    entrada.comision = body.comision
+    await db.flush()
+
+    ctx = AuditContext.from_user(
+        user,
+        ip=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await AuditService(db, user.tenant_id).record(
+        ctx,
+        accion=AuditAction.PADRON_ENTRADA_MODIFICAR,
+        detalle={
+            "entrada_id": str(entrada_id),
+            "comision": body.comision,
+        },
+        filas_afectadas=1,
+    )
+    await db.commit()
+    await db.refresh(entrada)
+    return _entrada_response(entrada)

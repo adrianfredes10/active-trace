@@ -1,35 +1,43 @@
 import { useComisionContext } from "@/features/comision/hooks/ComisionProvider";
-import { asignacionLabel } from "@/features/comision/utils/asignacionLabel";
+import { workspaceLabel } from "@/features/comision/utils/comisionWorkspaces";
 
 export function ComisionContextBar() {
-  const { equipos, isLoading, selected, setSelectedId } = useComisionContext();
+  const { workspaces, isLoading, selected, setWorkspaceKey } = useComisionContext();
 
   if (isLoading) {
-    return <p className="text-sm text-slate-600">Cargando asignaciones…</p>;
+    return <p className="text-sm text-text-secondary">Cargando asignaciones…</p>;
   }
 
-  if (equipos.length === 0) {
+  if (workspaces.length === 0) {
     return (
-      <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        No tenés asignaciones vigentes con materia y cohorte.
+      <p className="rounded-md border border-status-warning/30 bg-status-warning-soft px-4 py-3 text-sm text-status-warning">
+        No tenés asignaciones vigentes. Pedí al administrador que cree tu usuario con materia y
+        comisión.
       </p>
     );
   }
 
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium text-slate-700">Asignación activa</span>
-      <select
-        className="max-w-md rounded-lg border border-slate-300 bg-white px-3 py-2"
-        value={selected?.id ?? ""}
-        onChange={(e) => setSelectedId(e.target.value)}
-      >
-        {equipos.map((e) => (
-          <option key={e.id} value={e.id}>
-            {asignacionLabel(e)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="flex flex-col gap-2 rounded-md border border-border bg-surface-card p-4 sm:flex-row sm:items-end sm:justify-between">
+      <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
+        <span className="font-medium text-text-primary">Comisión activa</span>
+        <select
+          className="max-w-xl rounded-md border border-border bg-surface px-3 py-2 text-sm"
+          value={selected?.key ?? ""}
+          onChange={(e) => setWorkspaceKey(e.target.value)}
+        >
+          {workspaces.map((w) => (
+            <option key={w.key} value={w.key}>
+              {workspaceLabel(w)}
+            </option>
+          ))}
+        </select>
+      </label>
+      {selected?.comision && (
+        <p className="text-xs text-text-secondary">
+          Padrón filtrado a comisión <strong className="text-text-primary">{selected.comision}</strong>
+        </p>
+      )}
+    </div>
   );
 }

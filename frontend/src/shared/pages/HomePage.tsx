@@ -14,13 +14,22 @@ const DEMO_ROLES = [
     pasos: "Crear carrera, materia y usuario. Revisar estructura del tenant.",
   },
   {
-    label: "Profesor",
-    email: "prof@demo.local",
+    label: "Prof. comisión A",
+    email: "prof-a@demo.local",
     password: "Prof1234!",
     ruta: "/comision",
     permiso: "atrasados:ver",
     anyOf: [] as string[],
-    pasos: "Ver atrasados (Pedro y María), reportes, umbral y comunicar.",
+    pasos: "Ana y María (comisión A): atrasados, reportes y comunicar.",
+  },
+  {
+    label: "Prof. comisión B",
+    email: "prof-b@demo.local",
+    password: "Prof1234!",
+    ruta: "/comision",
+    permiso: "atrasados:ver",
+    anyOf: [] as string[],
+    pasos: "Pedro y Juan (comisión B): su padrón aislado del otro profesor.",
   },
   {
     label: "Coordinador",
@@ -101,7 +110,10 @@ export function HomePage() {
               <strong>Salir → Finanzas</strong> — finanzas@demo.local / Fin1234! → liquidaciones 2026-06.
             </li>
             <li>
-              <strong>Salir → Profesor</strong> — prof@demo.local → Mi comisión → Atrasados (2 alumnos).
+              <strong>Salir → Prof. A</strong> — prof-a@demo.local → Mi comisión → Ana y María (comisión A).
+            </li>
+            <li>
+              <strong>Salir → Prof. B</strong> — prof-b@demo.local → solo Pedro y Juan (comisión B).
             </li>
             <li>
               <strong>Coordinador</strong> — coord@demo.local → Equipos, Avisos, Tareas.

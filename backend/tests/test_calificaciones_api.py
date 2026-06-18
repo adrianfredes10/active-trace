@@ -14,6 +14,7 @@ from app.models.estructura import Carrera, Cohorte, EntidadEstado, Materia
 from app.repositories.calificacion_repository import CalificacionRepository
 from app.repositories.rbac_repository import RolRepository, UsuarioRolRepository
 from app.repositories.usuario_repository import UsuarioRepository
+from app.services.padron_service import PadronService
 from app.services.rbac_seed import seed_tenant_rbac
 
 TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000c10")
@@ -88,6 +89,7 @@ async def _seed(api_client) -> dict:
             materia_id=materia.id,
             carrera_id=carrera.id,
             cohorte_id=cohorte.id,
+            comisiones=[],
             desde=date(2026, 3, 1),
         )
         asig2 = Asignacion(
@@ -215,6 +217,46 @@ async def test_umbral_no_afecta_otro_docente(api_client, session) -> None:
     ana2 = next(c for c in c2 if c.nota_numerica == 75)
     assert ana1.aprobado is False  # umbral 80
     assert ana2.aprobado is True   # umbral default 60
+
+
+@pytest.mark.asyncio
+async def test_importar_respeta_comision_asignacion(api_client, session) -> None:
+    """1.4 — no importa notas de alumnos fuera de las comisiones del profesor."""
+    ctx = await _seed(api_client)
+    factory = get_session_factory()
+    async with factory() as db:
+        asig = await db.get(Asignacion, uuid.UUID(ctx["asig1_id"]))
+        assert asig is not None
+        asig.comisiones = ["A"]
+        await db.commit()
+
+    headers = await _headers(api_client)
+    await _importar_padron(api_client, ctx, headers)
+
+    resp = await api_client.post(
+        "/api/calificaciones/importar",
+        data={
+            "asignacion_id": ctx["asig1_id"],
+            "materia_id": ctx["materia_id"],
+            "cohorte_id": ctx["cohorte_id"],
+            "actividades": "TP1 (Real),Reflexion",
+        },
+        files={"file": ("notas.csv", io.BytesIO(CSV_CALIF), "text/csv")},
+        headers=headers,
+    )
+    assert resp.status_code == 201
+
+    repo = CalificacionRepository(session, TENANT_ID)
+    cals = await repo.list_by_asignacion(uuid.UUID(ctx["asig1_id"]))
+    entrada_ids = {c.entrada_padron_id for c in cals}
+    padron = PadronService(session, TENANT_ID)
+    entradas = await padron.list_entradas_activas(
+        uuid.UUID(ctx["materia_id"]), uuid.UUID(ctx["cohorte_id"])
+    )
+    pedro_id = next(e.id for e in entradas if e.email == "pedro@example.com")
+    ana_id = next(e.id for e in entradas if e.email == "ana@example.com")
+    assert ana_id in entrada_ids
+    assert pedro_id not in entrada_ids
 
 
 @pytest.mark.asyncio

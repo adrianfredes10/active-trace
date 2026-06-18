@@ -7,7 +7,7 @@ import { CalificacionesImportPanel } from "@/features/comision/components/Califi
 
 vi.mock("@/features/comision/hooks/ComisionProvider", () => ({
   useComisionContext: () => ({
-    contexto: { asignacion_id: "a1", materia_id: "m1", cohorte_id: "c1" },
+    contexto: { asignacion_id: "a1", materia_id: "m1", cohorte_id: "c1", comision: "A" },
     equipos: [],
     isLoading: false,
     selected: null,

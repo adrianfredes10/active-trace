@@ -8,6 +8,7 @@ const mockContexto = {
   asignacion_id: "a1",
   materia_id: "m1",
   cohorte_id: "c1",
+  comision: "A",
 };
 
 vi.mock("@/features/comision/hooks/ComisionProvider", () => ({

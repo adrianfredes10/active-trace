@@ -140,7 +140,7 @@ export function UsuariosPanel() {
             </p>
           )}
           <p className="text-xs text-slate-500">
-            Usá dominio válido (ej. @example.com). Cuentas con rol: prof@demo.local / Prof1234!
+            Usá dominio válido (ej. @example.com). Demo: prof-a@demo.local / prof-b@demo.local — Prof1234!
           </p>
         </form>
       </section>

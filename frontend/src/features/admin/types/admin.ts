@@ -12,6 +12,14 @@ export type MateriaItem = {
   estado: string;
 };
 
+export type CohorteItem = {
+  id: string;
+  carrera_id: string;
+  nombre: string;
+  anio: number;
+  estado: string;
+};
+
 export type UsuarioAdminItem = {
   id: string;
   nombre: string | null;

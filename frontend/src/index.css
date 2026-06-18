@@ -1,5 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --color-ink-900: #15213a;
+  --color-ink-700: #2a3b5c;
+  --color-surface: #f6f7f9;
+  --color-surface-card: #ffffff;
+  --color-border: #e3e6eb;
+  --color-text-primary: #1a1d24;
+  --color-text-secondary: #5b6472;
+  --color-accent-gold: #b8902e;
+  --color-accent-gold-soft: #f3e8ce;
+  --color-status-success: #2f6b4f;
+  --color-status-success-soft: color-mix(in srgb, #2f6b4f 10%, transparent);
+  --color-status-warning: #b45309;
+  --color-status-warning-soft: color-mix(in srgb, #b45309 10%, transparent);
+  --color-status-danger: #9b2c2c;
+  --color-status-danger-soft: color-mix(in srgb, #9b2c2c 10%, transparent);
+  --color-status-info: #3b6fa0;
+  --color-status-info-soft: color-mix(in srgb, #3b6fa0 10%, transparent);
+
+  --animate-trace-draw: trace-draw 150ms ease-out forwards;
+  --animate-fade-in: fade-in 0.2s ease-out;
+
+  @keyframes trace-draw {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
 body {
-  @apply min-h-screen bg-slate-50 text-slate-900 antialiased;
+  @apply min-h-screen bg-surface text-text-primary antialiased font-sans text-sm;
+}
+
+.trace-bar {
+  @apply absolute left-0 w-0.5 bg-accent-gold origin-center;
+  animation: trace-draw 150ms ease-out forwards;
+}
+
+.focus-ring {
+  @apply outline-none focus-visible:ring-2 focus-visible:ring-accent-gold focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
 }

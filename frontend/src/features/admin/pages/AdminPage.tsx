@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { EstructuraPanel } from "@/features/admin/components/EstructuraPanel";
+import { ProfesorAltaPanel } from "@/features/admin/components/ProfesorAltaPanel";
 import { UsuariosPanel } from "@/features/admin/components/UsuariosPanel";
 import { usePermissions } from "@/features/auth/hooks/usePermissions";
 
@@ -69,7 +70,12 @@ export function AdminPage() {
       </div>
 
       {activeTab === "estructura" && <EstructuraPanel />}
-      {activeTab === "usuarios" && <UsuariosPanel />}
+      {activeTab === "usuarios" && (
+        <div className="space-y-8">
+          <ProfesorAltaPanel />
+          <UsuariosPanel />
+        </div>
+      )}
     </div>
   );
 }

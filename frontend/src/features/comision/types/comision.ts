@@ -105,4 +105,5 @@ export type ComisionContexto = {
   asignacion_id: string;
   materia_id: string;
   cohorte_id: string;
+  comision: string | null;
 };

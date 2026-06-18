@@ -25,6 +25,9 @@ export async function importarCalificaciones(
   form.append("materia_id", ctx.materia_id);
   form.append("cohorte_id", ctx.cohorte_id);
   form.append("actividades", actividades.join(","));
+  if (ctx.comision) {
+    form.append("comision", ctx.comision);
+  }
   form.append("file", file);
   const { data } = await api.post<CalificacionImportResult>(
     "/api/calificaciones/importar",
