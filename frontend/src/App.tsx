@@ -19,11 +19,7 @@ import { ColoquioCrearPage } from "@/features/coloquios/pages/ColoquioCrearPage"
 import { ColoquioDetailPage } from "@/features/coloquios/pages/ColoquioDetailPage";
 import { ColoquiosDashboardPage } from "@/features/coloquios/pages/ColoquiosDashboardPage";
 import { ColoquiosPage } from "@/features/coloquios/pages/ColoquiosPage";
-import { EncuentrosLayout } from "@/features/encuentros/layout/EncuentrosLayout";
-import { EncuentroCrearPage } from "@/features/encuentros/pages/EncuentroCrearPage";
-import { EncuentrosListPage } from "@/features/encuentros/pages/EncuentrosListPage";
 import { EncuentrosPage } from "@/features/encuentros/pages/EncuentrosPage";
-import { GuardiasPage } from "@/features/encuentros/pages/GuardiasPage";
 import { FinanzasLayout } from "@/features/finanzas/layout/FinanzasLayout";
 import { FinanzasFacturasPage } from "@/features/finanzas/pages/FinanzasFacturasPage";
 import { FinanzasGrillaPage } from "@/features/finanzas/pages/FinanzasGrillaPage";
@@ -45,13 +41,7 @@ export function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/comision" element={<ComisionPage />} />
           <Route path="/coordinacion" element={<CoordinacionPage />} />
-          <Route path="/encuentros" element={<EncuentrosPage />}>
-            <Route element={<EncuentrosLayout />}>
-              <Route index element={<EncuentrosListPage />} />
-              <Route path="crear" element={<EncuentroCrearPage />} />
-              <Route path="guardias" element={<GuardiasPage />} />
-            </Route>
-          </Route>
+          <Route path="/encuentros" element={<EncuentrosPage />} />
           <Route path="/coloquios" element={<ColoquiosPage />}>
             <Route element={<ColoquiosLayout />}>
               <Route index element={<ColoquiosDashboardPage />} />

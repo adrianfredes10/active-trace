@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
+import { usePermissions } from "@/features/auth/hooks/usePermissions";
 import { persistSidebarCollapsed, readSidebarCollapsed, Sidebar } from "@/shared/components/Sidebar";
 import { UserMenu } from "@/shared/components/UserMenu";
 import { ROUTE_TITLES } from "@/shared/components/navConfig";
+import { isPathAllowedForPersona } from "@/shared/lib/navPersona";
 
 function PageTitle({ pathname }: { pathname: string }) {
   const title = ROUTE_TITLES[pathname] ?? "Active Trace";
@@ -20,6 +22,7 @@ function PageTitle({ pathname }: { pathname: string }) {
 
 export function AppLayout() {
   const location = useLocation();
+  const { persona, isLoading } = usePermissions();
   const [collapsed, setCollapsed] = useState(readSidebarCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -31,6 +34,10 @@ export function AppLayout() {
     setCollapsed(value);
     persistSidebarCollapsed(value);
   };
+
+  if (!isLoading && !isPathAllowedForPersona(location.pathname, persona)) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="flex min-h-screen bg-surface">

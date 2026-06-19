@@ -38,6 +38,7 @@ function NavIcon({ name }: { name: string }) {
           <path d="M3 20c0-3 3-5 6-5s6 2 6 5M13 20c0-2 2-4 4-4" />
         </svg>
       );
+    case "Crear encuentro":
     case "Encuentros":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -248,8 +249,8 @@ function SidebarPanel({
   onNavigate?: () => void;
   className?: string;
 }) {
-  const { hasPermission } = usePermissions();
-  const visibleGroups = filterVisibleGroups(NAV_GROUPS, hasPermission);
+  const { hasPermission, persona } = usePermissions();
+  const visibleGroups = filterVisibleGroups(NAV_GROUPS, hasPermission, persona);
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     try {

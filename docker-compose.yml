@@ -25,6 +25,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://activia:activia@postgres:5432/activia
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      LOGIN_RATE_LIMIT_ENABLED: "false"
     depends_on:
       postgres:
         condition: service_healthy

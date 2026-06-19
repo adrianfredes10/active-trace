@@ -14,15 +14,32 @@ class RateLimiter:
         self.window_seconds = window_seconds
         self._hits: dict[str, deque[float]] = defaultdict(deque)
 
-    def allow(self, key: str) -> bool:
-        """Registra un intento; devuelve False si superó el límite."""
-        now = time.monotonic()
+    def _prune(self, key: str, now: float) -> deque[float]:
         window = self._hits[key]
         while window and window[0] <= now - self.window_seconds:
             window.popleft()
-        if len(window) >= self.max_attempts:
-            return False
+        return window
+
+    def is_blocked(self, key: str) -> bool:
+        """True si la clave superó el límite de fallos en la ventana."""
+        now = time.monotonic()
+        return len(self._prune(key, now)) >= self.max_attempts
+
+    def record_failure(self, key: str) -> None:
+        """Registra un intento fallido."""
+        now = time.monotonic()
+        window = self._prune(key, now)
         window.append(now)
+
+    def clear_key(self, key: str) -> None:
+        """Limpia fallos tras un login exitoso."""
+        self._hits.pop(key, None)
+
+    def allow(self, key: str) -> bool:
+        """Compat tests legacy: registra fallo si no está bloqueado."""
+        if self.is_blocked(key):
+            return False
+        self.record_failure(key)
         return True
 
     def reset(self) -> None:

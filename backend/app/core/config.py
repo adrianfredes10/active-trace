@@ -40,6 +40,15 @@ class Settings(BaseSettings):
         default="http://localhost:5173,http://127.0.0.1:5173",
         alias="CORS_ORIGINS",
     )
+    login_rate_limit_enabled: bool = Field(default=True, alias="LOGIN_RATE_LIMIT_ENABLED")
+    login_rate_limit_max_attempts: int = Field(
+        default=5,
+        alias="LOGIN_RATE_LIMIT_MAX_ATTEMPTS",
+    )
+    login_rate_limit_window_seconds: int = Field(
+        default=60,
+        alias="LOGIN_RATE_LIMIT_WINDOW_SECONDS",
+    )
     moodle_base_url: str | None = Field(default=None, alias="MOODLE_BASE_URL")
     moodle_token: str | None = Field(default=None, alias="MOODLE_TOKEN")
 

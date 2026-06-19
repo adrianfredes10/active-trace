@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.audit_actions import AuditAction
 from app.core.dependencies import CurrentUser, get_current_user, get_db
 from app.core.permissions import require_permission
+from app.core.config import get_settings
 from app.core.rate_limit import login_rate_limiter
 from app.core.security import (
     TOKEN_TYPE_CHALLENGE,
@@ -59,21 +60,36 @@ async def _resolve_tenant_id(db: AsyncSession, slug: str) -> uuid.UUID:
     return tenant_id
 
 
+def _login_rate_limit_key(client_ip: str, email: str) -> str:
+    return f"{client_ip}:{email.lower()}"
+
+
 @router.post("/login", response_model=LoginResponse)
 async def login(
     payload: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)
 ) -> LoginResponse:
+    settings = get_settings()
     client_ip = request.client.host if request.client else "unknown"
-    if not login_rate_limiter.allow(f"{client_ip}:{payload.email.lower()}"):
+    rate_key = _login_rate_limit_key(client_ip, payload.email)
+    if settings.login_rate_limit_enabled and login_rate_limiter.is_blocked(rate_key):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Demasiados intentos, probá más tarde",
         )
-    tenant_id = await _resolve_tenant_id(db, payload.tenant_slug)
+    try:
+        tenant_id = await _resolve_tenant_id(db, payload.tenant_slug)
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED and settings.login_rate_limit_enabled:
+            login_rate_limiter.record_failure(rate_key)
+        raise
     try:
         result = await AuthService(db, tenant_id).login(payload.email, payload.password)
     except InvalidCredentials as exc:
+        if settings.login_rate_limit_enabled:
+            login_rate_limiter.record_failure(rate_key)
         raise _INVALID from exc
+    if settings.login_rate_limit_enabled:
+        login_rate_limiter.clear_key(rate_key)
     await db.commit()
     if result.requires_2fa:
         return LoginResponse(requires_2fa=True, challenge_token=result.challenge_token)

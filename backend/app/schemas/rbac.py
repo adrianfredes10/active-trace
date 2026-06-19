@@ -19,6 +19,7 @@ class CatalogoResponse(_Schema):
 
 class PermisosEfectivosResponse(_Schema):
     permisos: list[str]
+    roles: list[str] = Field(default_factory=list)
 
 
 class MessageResponse(_Schema):

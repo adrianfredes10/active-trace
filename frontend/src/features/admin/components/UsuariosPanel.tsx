@@ -8,7 +8,6 @@ import { ProfesorFormModal } from "@/features/admin/components/ProfesorFormModal
 import { UsuarioFormModal } from "@/features/admin/components/UsuarioFormModal";
 import {
   actualizarUsuarioAdmin,
-  crearUsuarioAdmin,
   desactivarUsuarioAdmin,
   fetchUsuariosAdmin,
 } from "@/features/admin/services/usuarioAdminService";
@@ -19,7 +18,6 @@ import { showToast } from "@/shared/components/ui/Toast";
 
 export function UsuariosPanel() {
   const queryClient = useQueryClient();
-  const [usuarioModalOpen, setUsuarioModalOpen] = useState(false);
   const [profesorModalOpen, setProfesorModalOpen] = useState(false);
   const [selectedUsuario, setSelectedUsuario] = useState<UsuarioAdminItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UsuarioAdminItem | null>(null);
@@ -30,13 +28,8 @@ export function UsuariosPanel() {
     retry: 1,
   });
 
-  const crearMutation = useMutation({
-    mutationFn: crearUsuarioAdmin,
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["admin-usuarios"] }),
-  });
-
   const actualizarMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof actualizarUsuarioAdmin>[1] }) =>
+    mutationFn: ({ id, payload }: { id: string; payload: { nombre: string; apellidos: string } }) =>
       actualizarUsuarioAdmin(id, payload),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["admin-usuarios"] }),
   });
@@ -68,11 +61,6 @@ export function UsuariosPanel() {
       ),
     },
     {
-      key: "facturador",
-      header: "Factura",
-      render: (u: UsuarioAdminItem) => (u.facturador ? "Sí" : "—"),
-    },
-    {
       key: "acciones",
       header: "Acciones",
       render: (u: UsuarioAdminItem) => (
@@ -80,10 +68,7 @@ export function UsuariosPanel() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => {
-              setSelectedUsuario(u);
-              setUsuarioModalOpen(true);
-            }}
+            onClick={() => setSelectedUsuario(u)}
           >
             Editar
           </Button>
@@ -98,20 +83,12 @@ export function UsuariosPanel() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Usuarios del tenant"
-        subtitle="Alta de usuarios genéricos o profesores con asignación a comisión."
+        title="Usuarios"
+        subtitle="Creá docentes con rol PROFESOR y asignación a materia y comisión."
         actions={[
           {
             label: "Nuevo profesor",
             onClick: () => setProfesorModalOpen(true),
-            variant: "secondary",
-          },
-          {
-            label: "Nuevo usuario",
-            onClick: () => {
-              setSelectedUsuario(null);
-              setUsuarioModalOpen(true);
-            },
           },
         ]}
       />
@@ -130,29 +107,16 @@ export function UsuariosPanel() {
         emptyMessage="Sin usuarios activos."
       />
 
-      <UsuarioFormModal
-        open={usuarioModalOpen}
-        onClose={() => {
-          setUsuarioModalOpen(false);
-          setSelectedUsuario(null);
-        }}
-        usuario={selectedUsuario}
-        onCreate={async (payload) => {
-          await crearMutation.mutateAsync({
-            email: payload.email,
-            password: payload.password,
-            nombre: payload.nombre,
-            apellidos: payload.apellidos,
-            banco: payload.banco || undefined,
-            regional: payload.regional || undefined,
-            legajo: payload.legajo || undefined,
-            facturador: payload.facturador,
-          });
-        }}
-        onUpdate={async (id, payload) => {
-          await actualizarMutation.mutateAsync({ id, payload });
-        }}
-      />
+      {selectedUsuario && (
+        <UsuarioFormModal
+          open
+          usuario={selectedUsuario}
+          onClose={() => setSelectedUsuario(null)}
+          onUpdate={async (id, payload) => {
+            await actualizarMutation.mutateAsync({ id, payload });
+          }}
+        />
+      )}
 
       <ProfesorFormModal open={profesorModalOpen} onClose={() => setProfesorModalOpen(false)} />
 
@@ -167,10 +131,6 @@ export function UsuariosPanel() {
           if (deleteTarget) eliminarMutation.mutate(deleteTarget.id);
         }}
       />
-
-      <p className="text-xs text-text-secondary">
-        Demo: prof-a@demo.local / prof-b@demo.local — Prof1234! (comisiones A y B).
-      </p>
     </div>
   );
 }

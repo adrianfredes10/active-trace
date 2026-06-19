@@ -35,7 +35,7 @@ export async function resetPasswordRequest(payload: ResetPasswordPayload): Promi
   await api.post("/api/auth/reset-password", payload);
 }
 
-export async function fetchPermisosEfectivos(): Promise<string[]> {
+export async function fetchPermisosEfectivos(): Promise<PermisosEfectivosResponse> {
   const { data } = await api.get<PermisosEfectivosResponse>("/api/rbac/permisos-efectivos");
-  return data.permisos;
+  return data;
 }

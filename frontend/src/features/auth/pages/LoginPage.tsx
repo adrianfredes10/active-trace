@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -43,6 +43,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [devLoadingEmail, setDevLoadingEmail] = useState<string | null>(null);
+  const loginInFlight = useRef(false);
   const {
     register,
     handleSubmit,
@@ -61,6 +62,10 @@ export function LoginPage() {
     email: string;
     password: string;
   }) => {
+    if (loginInFlight.current) {
+      return;
+    }
+    loginInFlight.current = true;
     setError(null);
     try {
       const result = await login(payload);
@@ -71,10 +76,12 @@ export function LoginPage() {
       navigate("/");
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 429) {
-        setError("Demasiados intentos. Esperá 1 minuto y probá de nuevo.");
+        setError("Demasiados intentos fallidos. Esperá 1 minuto y probá de nuevo.");
         return;
       }
       setError("Email o contraseña incorrectos.");
+    } finally {
+      loginInFlight.current = false;
     }
   };
 

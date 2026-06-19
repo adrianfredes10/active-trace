@@ -35,6 +35,7 @@ export type ResetPasswordPayload = {
 
 export type PermisosEfectivosResponse = {
   permisos: string[];
+  roles: string[];
 };
 
 export type AuthSession = {

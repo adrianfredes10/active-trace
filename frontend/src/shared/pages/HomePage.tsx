@@ -5,11 +5,22 @@ import { useAuth } from "@/features/auth/hooks/AuthProvider";
 import { usePermissions } from "@/features/auth/hooks/usePermissions";
 import { fetchResumenAcademico } from "@/features/admin/services/adminDashboardService";
 import { KpiCard } from "@/shared/components/charts/KpiCard";
+import { isNavPathAllowedForPersona } from "@/shared/lib/navPersona";
+
+const MODULE_LINKS = [
+  { to: "/admin", label: "Panel admin" },
+  { to: "/comision", label: "Mi comisión" },
+  { to: "/encuentros", label: "Crear encuentro" },
+  { to: "/coloquios", label: "Coloquios" },
+  { to: "/coordinacion", label: "Coordinación" },
+  { to: "/finanzas", label: "Finanzas" },
+  { to: "/auditoria", label: "Auditoría" },
+] as const;
 
 export function HomePage() {
   const { user } = useAuth();
-  const { hasPermission } = usePermissions();
-  const canSeeResumen = hasPermission("estructura:gestionar");
+  const { hasPermission, persona } = usePermissions();
+  const canSeeResumen = persona === "ADMIN" && hasPermission("estructura:gestionar");
 
   const resumen = useQuery({
     queryKey: ["admin-resumen"],
@@ -18,19 +29,21 @@ export function HomePage() {
     retry: 1,
   });
 
-  const visibleModules = [
-    { to: "/admin", label: "Panel admin", show: canSeeResumen || hasPermission("usuarios:gestionar") },
-    { to: "/comision", label: "Mi comisión", show: hasPermission("atrasados:ver") },
-    { to: "/encuentros", label: "Encuentros", show: hasPermission("encuentros:gestionar") },
-    { to: "/coloquios", label: "Coloquios", show: hasPermission("evaluaciones:gestionar") },
-    { to: "/coordinacion", label: "Coordinación", show: hasPermission("equipos:asignar") },
-    {
-      to: "/finanzas",
-      label: "Finanzas",
-      show: hasPermission("liquidaciones:grilla") || hasPermission("facturas:gestionar"),
-    },
-    { to: "/auditoria", label: "Auditoría", show: hasPermission("auditoria:ver") },
-  ].filter((m) => m.show);
+  const visibleModules = MODULE_LINKS.filter((m) => {
+    if (!isNavPathAllowedForPersona(m.to, persona)) return false;
+    if (m.to === "/admin") {
+      return hasPermission("estructura:gestionar") || hasPermission("usuarios:gestionar");
+    }
+    if (m.to === "/comision") return hasPermission("atrasados:ver");
+    if (m.to === "/encuentros") return hasPermission("encuentros:gestionar");
+    if (m.to === "/coloquios") return hasPermission("evaluaciones:gestionar");
+    if (m.to === "/coordinacion") return hasPermission("equipos:asignar");
+    if (m.to === "/finanzas") {
+      return hasPermission("liquidaciones:grilla") || hasPermission("facturas:gestionar");
+    }
+    if (m.to === "/auditoria") return hasPermission("auditoria:ver");
+    return true;
+  });
 
   return (
     <div className="space-y-8">

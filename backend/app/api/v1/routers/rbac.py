@@ -27,7 +27,7 @@ async def mis_permisos(
     perms = await PermissionService(db, user.tenant_id).effective_permissions(
         user.roles
     )
-    return PermisosEfectivosResponse(permisos=sorted(perms))
+    return PermisosEfectivosResponse(permisos=sorted(perms), roles=sorted(user.roles))
 
 
 @router.get("/catalogo", response_model=CatalogoResponse)

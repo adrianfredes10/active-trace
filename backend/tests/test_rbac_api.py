@@ -51,9 +51,11 @@ async def test_permisos_efectivos(api_client) -> None:
     headers = {"Authorization": f"Bearer {tokens['access_token']}"}
     resp = await api_client.get("/api/rbac/permisos-efectivos", headers=headers)
     assert resp.status_code == 200
-    perms = resp.json()["permisos"]
+    body = resp.json()
+    perms = body["permisos"]
     assert "calificaciones:importar" in perms
     assert "tenant:configurar" not in perms
+    assert body["roles"] == ["PROFESOR"]
 
 
 @pytest.mark.asyncio

@@ -22,7 +22,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     label: "Académico",
     items: [
       { to: "/comision", label: "Mi comisión", permission: "atrasados:ver" },
-      { to: "/encuentros", label: "Encuentros", permission: "encuentros:gestionar" },
+      { to: "/encuentros", label: "Crear encuentro", permission: "encuentros:gestionar" },
       { to: "/coloquios", label: "Coloquios", permission: "evaluaciones:gestionar" },
     ],
   },
@@ -65,9 +65,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
 export const ROUTE_TITLES: Record<string, string> = {
   "/": "Inicio",
   "/comision": "Mi comisión",
-  "/encuentros": "Encuentros",
-  "/encuentros/crear": "Crear encuentro",
-  "/encuentros/guardias": "Guardias",
+  "/encuentros": "Crear encuentro",
   "/coloquios": "Coloquios",
   "/coloquios/crear": "Nueva convocatoria",
   "/coordinacion": "Coordinación",
@@ -82,10 +80,16 @@ export const ROUTE_TITLES: Record<string, string> = {
   "/auditoria": "Auditoría",
 };
 
+import { isNavPathAllowedForPersona, type UserPersona } from "@/shared/lib/navPersona";
+
 export function isNavItemVisible(
   item: NavItem,
   hasPermission: (permission: string) => boolean,
+  persona: UserPersona,
 ): boolean {
+  if (!isNavPathAllowedForPersona(item.to, persona)) {
+    return false;
+  }
   if (item.anyPermission?.length) {
     return item.anyPermission.some((p) => hasPermission(p));
   }
@@ -95,11 +99,13 @@ export function isNavItemVisible(
 export function filterVisibleGroups(
   groups: readonly NavGroup[],
   hasPermission: (permission: string) => boolean,
+  persona: UserPersona,
 ): NavGroup[] {
   return groups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => isNavItemVisible(item, hasPermission)),
+      items: group.items.filter((item) => isNavItemVisible(item, hasPermission, persona)),
     }))
     .filter((group) => group.items.length > 0);
 }
+
