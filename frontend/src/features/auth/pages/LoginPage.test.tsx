@@ -20,7 +20,7 @@ describe("LoginPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: /activia-trace/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /iniciar sesión/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /ingresar/i })).toBeInTheDocument();
   });

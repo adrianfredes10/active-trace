@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import CurrentUser, get_current_user, get_db
 from app.core.permissions import require_permission
+from app.schemas.admin_dashboard import ResumenAcademicoResponse
 from app.schemas.estructura import (
     CarreraCreate,
     CarreraListResponse,
@@ -21,6 +22,7 @@ from app.schemas.estructura import (
     MateriaResponse,
     MateriaUpdate,
 )
+from app.services.admin_dashboard_service import AdminDashboardService
 from app.services.estructura_service import EstructuraService
 
 router = APIRouter(
@@ -64,6 +66,16 @@ def _materia_response(entity) -> MateriaResponse:
         created_at=entity.created_at,
         updated_at=entity.updated_at,
     )
+
+
+@router.get("/resumen-academico", response_model=ResumenAcademicoResponse)
+async def resumen_academico(
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ResumenAcademicoResponse:
+    svc = AdminDashboardService(db, user.tenant_id)
+    data = await svc.resumen_academico()
+    return ResumenAcademicoResponse(**data)
 
 
 @router.get("/carreras", response_model=CarreraListResponse)

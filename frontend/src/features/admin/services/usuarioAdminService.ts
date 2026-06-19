@@ -6,7 +6,21 @@ export type CrearUsuarioAdminPayload = {
   password: string;
   nombre?: string;
   apellidos?: string;
+  banco?: string;
+  regional?: string;
   legajo?: string;
+  legajo_profesional?: string;
+  facturador?: boolean;
+};
+
+export type ActualizarUsuarioAdminPayload = {
+  nombre?: string;
+  apellidos?: string;
+  banco?: string;
+  regional?: string;
+  legajo?: string;
+  legajo_profesional?: string;
+  facturador?: boolean;
 };
 
 export async function fetchUsuariosAdmin(): Promise<UsuarioAdminItem[]> {
@@ -19,4 +33,16 @@ export async function crearUsuarioAdmin(
 ): Promise<UsuarioAdminItem> {
   const { data } = await api.post<UsuarioAdminItem>("/api/admin/usuarios", payload);
   return data;
+}
+
+export async function actualizarUsuarioAdmin(
+  id: string,
+  payload: ActualizarUsuarioAdminPayload,
+): Promise<UsuarioAdminItem> {
+  const { data } = await api.put<UsuarioAdminItem>(`/api/admin/usuarios/${id}`, payload);
+  return data;
+}
+
+export async function desactivarUsuarioAdmin(id: string): Promise<void> {
+  await api.delete(`/api/admin/usuarios/${id}`);
 }

@@ -38,10 +38,50 @@ function NavIcon({ name }: { name: string }) {
           <path d="M3 20c0-3 3-5 6-5s6 2 6 5M13 20c0-2 2-4 4-4" />
         </svg>
       );
-    case "Finanzas":
+    case "Encuentros":
+      return (
+        <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+      );
+    case "Coloquios":
+      return (
+        <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 11l3 3L22 4" />
+          <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+        </svg>
+      );
+    case "Liquidaciones":
+    case "Facturas":
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7H14a3.5 3.5 0 010 7H6" />
+        </svg>
+      );
+    case "Panel":
+      return (
+        <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+      );
+    case "Carreras":
+    case "Materias":
+    case "Cohortes":
+      return (
+        <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+        </svg>
+      );
+    case "Usuarios":
+      return (
+        <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="9" cy="7" r="3" />
+          <path d="M3 20c0-3 3-5 6-5s6 2 6 5M16 11h6M19 8v6" />
         </svg>
       );
     case "Admin":
@@ -171,6 +211,7 @@ function SidebarNav({
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  end={item.to === "/" || item.to === "/admin"}
                   onClick={onNavigate}
                   title={collapsed ? item.label : undefined}
                   className={({ isActive }) =>

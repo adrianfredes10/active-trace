@@ -12,7 +12,21 @@ Credenciales:
 """
 
 import asyncio
+import importlib.util
+import sys
 import uuid
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+_eco_path = Path(__file__).resolve().parent / "seed_demo_ecosystem.py"
+_eco_spec = importlib.util.spec_from_file_location("seed_demo_ecosystem", _eco_path)
+assert _eco_spec and _eco_spec.loader
+_eco_mod = importlib.util.module_from_spec(_eco_spec)
+_eco_spec.loader.exec_module(_eco_mod)
+seed_demo_ecosystem = _eco_mod.seed_demo_ecosystem
 
 from sqlalchemy import select
 
@@ -24,7 +38,6 @@ from app.models.estructura import Carrera, EntidadEstado, Materia
 from app.repositories.rbac_repository import RolRepository, UsuarioRolRepository
 from app.repositories.usuario_repository import UsuarioRepository
 from app.services.rbac_seed import seed_tenant_rbac
-from scripts.seed_demo_ecosystem import seed_demo_ecosystem
 
 DEMO_TENANT_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
 DEMO_SLUG = "demo"

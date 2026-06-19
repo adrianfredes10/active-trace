@@ -1,65 +1,34 @@
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/features/auth/hooks/AuthProvider";
 import { usePermissions } from "@/features/auth/hooks/usePermissions";
-
-const DEMO_ROLES = [
-  {
-    label: "Administrador",
-    email: "admin@demo.local",
-    password: "Admin1234!",
-    ruta: "/admin",
-    permiso: null as string | null,
-    anyOf: ["estructura:gestionar", "usuarios:gestionar"],
-    pasos: "Crear carrera, materia y usuario. Revisar estructura del tenant.",
-  },
-  {
-    label: "Prof. comisión A",
-    email: "prof-a@demo.local",
-    password: "Prof1234!",
-    ruta: "/comision",
-    permiso: "atrasados:ver",
-    anyOf: [] as string[],
-    pasos: "Ana y María (comisión A): atrasados, reportes y comunicar.",
-  },
-  {
-    label: "Prof. comisión B",
-    email: "prof-b@demo.local",
-    password: "Prof1234!",
-    ruta: "/comision",
-    permiso: "atrasados:ver",
-    anyOf: [] as string[],
-    pasos: "Pedro y Juan (comisión B): su padrón aislado del otro profesor.",
-  },
-  {
-    label: "Coordinador",
-    email: "coord@demo.local",
-    password: "Coord1234!",
-    ruta: "/coordinacion",
-    permiso: "equipos:asignar",
-    anyOf: [] as string[],
-    pasos: "Equipos docentes, avisos, tareas internas y monitor.",
-  },
-  {
-    label: "Finanzas",
-    email: "finanzas@demo.local",
-    password: "Fin1234!",
-    ruta: "/finanzas",
-    permiso: "liquidaciones:grilla",
-    anyOf: [] as string[],
-    pasos: "Liquidaciones junio 2026 y grilla salarial.",
-  },
-] as const;
+import { fetchResumenAcademico } from "@/features/admin/services/adminDashboardService";
+import { KpiCard } from "@/shared/components/charts/KpiCard";
 
 export function HomePage() {
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
+  const canSeeResumen = hasPermission("estructura:gestionar");
+
+  const resumen = useQuery({
+    queryKey: ["admin-resumen"],
+    queryFn: fetchResumenAcademico,
+    enabled: canSeeResumen,
+    retry: 1,
+  });
 
   const visibleModules = [
-    { to: "/admin", label: "Administración", show: hasPermission("estructura:gestionar") },
+    { to: "/admin", label: "Panel admin", show: canSeeResumen || hasPermission("usuarios:gestionar") },
     { to: "/comision", label: "Mi comisión", show: hasPermission("atrasados:ver") },
+    { to: "/encuentros", label: "Encuentros", show: hasPermission("encuentros:gestionar") },
+    { to: "/coloquios", label: "Coloquios", show: hasPermission("evaluaciones:gestionar") },
     { to: "/coordinacion", label: "Coordinación", show: hasPermission("equipos:asignar") },
-    { to: "/finanzas", label: "Finanzas", show: hasPermission("liquidaciones:grilla") },
+    {
+      to: "/finanzas",
+      label: "Finanzas",
+      show: hasPermission("liquidaciones:grilla") || hasPermission("facturas:gestionar"),
+    },
     { to: "/auditoria", label: "Auditoría", show: hasPermission("auditoria:ver") },
   ].filter((m) => m.show);
 
@@ -73,71 +42,30 @@ export function HomePage() {
         </p>
       </div>
 
+      {canSeeResumen && resumen.data && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-medium text-text-primary">Resumen académico</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard label="Alumnos" value={resumen.data.total_alumnos} />
+            <KpiCard label="Entregas" value={resumen.data.total_calificaciones} />
+            <KpiCard label="Aprobadas" value={resumen.data.entregas_aprobadas} />
+            <KpiCard label="Pendientes" value={resumen.data.entregas_pendientes} />
+          </div>
+        </section>
+      )}
+
       {visibleModules.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-lg font-medium text-slate-900">Tus módulos</h2>
+          <h2 className="text-lg font-medium text-text-primary">Tus módulos</h2>
           <div className="flex flex-wrap gap-2">
             {visibleModules.map((m) => (
               <Link
                 key={m.to}
                 to={m.to}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                className="inline-flex items-center rounded-md border border-border bg-surface-card px-4 py-2 text-sm font-medium text-text-primary no-underline hover:bg-surface"
               >
                 {m.label} →
               </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {import.meta.env.DEV && (
-        <section className="rounded-xl border border-slate-200 bg-white p-5">
-          <h2 className="text-lg font-medium text-slate-900">Guión sugerido para el video (~10 min)</h2>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-700">
-            <li>
-              <strong>Login admin</strong> — botón verde o admin@demo.local / Admin1234!
-            </li>
-            <li>
-              <strong>Admin → Estructura</strong> — mostrar TUP y MAT01; crear una carrera o materia de prueba.
-            </li>
-            <li>
-              <strong>Admin → Usuarios</strong> — listar y crear usuario (email con dominio válido, ej. @example.com).
-            </li>
-            <li>
-              <strong>Auditoría</strong> — panel de métricas y log (acciones de padrón y calificaciones).
-            </li>
-            <li>
-              <strong>Salir → Finanzas</strong> — finanzas@demo.local / Fin1234! → liquidaciones 2026-06.
-            </li>
-            <li>
-              <strong>Salir → Prof. A</strong> — prof-a@demo.local → Mi comisión → Ana y María (comisión A).
-            </li>
-            <li>
-              <strong>Salir → Prof. B</strong> — prof-b@demo.local → solo Pedro y Juan (comisión B).
-            </li>
-            <li>
-              <strong>Coordinador</strong> — coord@demo.local → Equipos, Avisos, Tareas.
-            </li>
-          </ol>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {DEMO_ROLES.map((rol) => (
-              <div
-                key={rol.email}
-                className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 text-sm"
-              >
-                <p className="font-medium text-slate-900">{rol.label}</p>
-                <p className="mt-1 font-mono text-xs text-slate-600">
-                  {rol.email} / {rol.password}
-                </p>
-                <p className="mt-2 text-slate-600">{rol.pasos}</p>
-                <Link
-                  to={rol.ruta}
-                  className="mt-2 inline-block text-xs font-medium text-slate-900 underline"
-                >
-                  Ir a {rol.ruta}
-                </Link>
-              </div>
             ))}
           </div>
         </section>

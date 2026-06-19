@@ -24,7 +24,10 @@ export type UsuarioAdminItem = {
   id: string;
   nombre: string | null;
   apellidos: string | null;
+  banco: string | null;
+  regional: string | null;
   legajo: string | null;
+  legajo_profesional: string | null;
   facturador: boolean;
   estado: string;
 };

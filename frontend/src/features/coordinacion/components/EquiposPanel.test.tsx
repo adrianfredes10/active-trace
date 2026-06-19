@@ -36,6 +36,7 @@ vi.mock("@/features/coordinacion/services/equiposCoordService", () => ({
   ]),
   exportarEquipoCsv: vi.fn(),
   clonarEquipo: vi.fn(),
+  crearAsignacion: vi.fn(),
 }));
 
 function renderWithQuery(ui: React.ReactElement) {

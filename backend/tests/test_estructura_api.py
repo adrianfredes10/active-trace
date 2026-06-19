@@ -235,6 +235,24 @@ async def test_aislamiento_tenant_por_codigo(api_client) -> None:
 
 
 @pytest.mark.asyncio
+async def test_resumen_academico(api_client) -> None:
+    headers = await _auth_headers(api_client)
+    resp = await api_client.get("/api/admin/resumen-academico", headers=headers)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total_alumnos"] >= 0
+    assert body["total_calificaciones"] >= 0
+    assert isinstance(body["por_comision"], list)
+
+
+@pytest.mark.asyncio
+async def test_resumen_academico_forbidden_sin_permiso(api_client) -> None:
+    headers = await _auth_headers(api_client, role="PROFESOR")
+    resp = await api_client.get("/api/admin/resumen-academico", headers=headers)
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_repository_no_ve_carreras_de_otro_tenant(session) -> None:
     factory = get_session_factory()
     async with factory() as db:

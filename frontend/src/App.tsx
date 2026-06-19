@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import { ProtectedRoute } from "@/features/auth/components/ProtectedRoute";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
@@ -8,10 +8,30 @@ import { TwoFactorPage } from "@/features/auth/pages/TwoFactorPage";
 import { AuditoriaPage } from "@/features/auditoria/pages/AuditoriaPage";
 import { ComisionPage } from "@/features/comision/pages/ComisionPage";
 import { CoordinacionPage } from "@/features/coordinacion/pages/CoordinacionPage";
+import { AdminLayout } from "@/features/admin/layout/AdminLayout";
+import { AdminCarrerasPage } from "@/features/admin/pages/AdminCarrerasPage";
+import { AdminCohortesPage } from "@/features/admin/pages/AdminCohortesPage";
+import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
+import { AdminMateriasPage } from "@/features/admin/pages/AdminMateriasPage";
+import { AdminUsuariosPage } from "@/features/admin/pages/AdminUsuariosPage";
+import { ColoquiosLayout } from "@/features/coloquios/layout/ColoquiosLayout";
+import { ColoquioCrearPage } from "@/features/coloquios/pages/ColoquioCrearPage";
+import { ColoquioDetailPage } from "@/features/coloquios/pages/ColoquioDetailPage";
+import { ColoquiosDashboardPage } from "@/features/coloquios/pages/ColoquiosDashboardPage";
+import { ColoquiosPage } from "@/features/coloquios/pages/ColoquiosPage";
+import { EncuentrosLayout } from "@/features/encuentros/layout/EncuentrosLayout";
+import { EncuentroCrearPage } from "@/features/encuentros/pages/EncuentroCrearPage";
+import { EncuentrosListPage } from "@/features/encuentros/pages/EncuentrosListPage";
+import { EncuentrosPage } from "@/features/encuentros/pages/EncuentrosPage";
+import { GuardiasPage } from "@/features/encuentros/pages/GuardiasPage";
+import { FinanzasLayout } from "@/features/finanzas/layout/FinanzasLayout";
+import { FinanzasFacturasPage } from "@/features/finanzas/pages/FinanzasFacturasPage";
+import { FinanzasGrillaPage } from "@/features/finanzas/pages/FinanzasGrillaPage";
+import { FinanzasLiquidacionesPage } from "@/features/finanzas/pages/FinanzasLiquidacionesPage";
 import { FinanzasPage } from "@/features/finanzas/pages/FinanzasPage";
-import { AdminPage } from "@/features/admin/pages/AdminPage";
 import { AppLayout } from "@/shared/components/AppLayout";
 import { HomePage } from "@/shared/pages/HomePage";
+import { NotFoundPage } from "@/shared/pages/NotFoundPage";
 
 export function AppRoutes() {
   return (
@@ -25,12 +45,38 @@ export function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/comision" element={<ComisionPage />} />
           <Route path="/coordinacion" element={<CoordinacionPage />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/finanzas" element={<FinanzasPage />} />
+          <Route path="/encuentros" element={<EncuentrosPage />}>
+            <Route element={<EncuentrosLayout />}>
+              <Route index element={<EncuentrosListPage />} />
+              <Route path="crear" element={<EncuentroCrearPage />} />
+              <Route path="guardias" element={<GuardiasPage />} />
+            </Route>
+          </Route>
+          <Route path="/coloquios" element={<ColoquiosPage />}>
+            <Route element={<ColoquiosLayout />}>
+              <Route index element={<ColoquiosDashboardPage />} />
+              <Route path="crear" element={<ColoquioCrearPage />} />
+              <Route path=":evaluacionId" element={<ColoquioDetailPage />} />
+            </Route>
+          </Route>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="carreras" element={<AdminCarrerasPage />} />
+            <Route path="materias" element={<AdminMateriasPage />} />
+            <Route path="cohortes" element={<AdminCohortesPage />} />
+            <Route path="usuarios" element={<AdminUsuariosPage />} />
+          </Route>
+          <Route path="/finanzas" element={<FinanzasPage />}>
+            <Route element={<FinanzasLayout />}>
+              <Route index element={<FinanzasLiquidacionesPage />} />
+              <Route path="grilla" element={<FinanzasGrillaPage />} />
+              <Route path="facturas" element={<FinanzasFacturasPage />} />
+            </Route>
+          </Route>
           <Route path="/auditoria" element={<AuditoriaPage />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

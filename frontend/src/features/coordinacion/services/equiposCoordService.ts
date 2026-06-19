@@ -14,6 +14,22 @@ export async function fetchAsignaciones(
   return data.items;
 }
 
+export type CrearAsignacionPayload = {
+  usuario_id: string;
+  rol: string;
+  materia_id?: string;
+  carrera_id?: string;
+  cohorte_id?: string;
+  comisiones?: string[];
+  desde: string;
+  hasta?: string;
+};
+
+export async function crearAsignacion(payload: CrearAsignacionPayload): Promise<AsignacionItem> {
+  const { data } = await api.post<AsignacionItem>("/api/asignaciones", payload);
+  return data;
+}
+
 export async function clonarEquipo(
   payload: ClonarEquipoPayload,
 ): Promise<OperacionEquipoResult> {

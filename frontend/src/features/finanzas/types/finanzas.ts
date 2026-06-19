@@ -1,5 +1,17 @@
 export type LiquidacionSegmento = "general" | "nexo" | "factura";
 
+export type FacturaItem = {
+  id: string;
+  usuario_id: string;
+  periodo: string;
+  detalle: string;
+  referencia_archivo: string | null;
+  tamano_kb: string | null;
+  estado: string;
+  cargada_at: string;
+  abonada_at: string | null;
+};
+
 export type LiquidacionItem = {
   id: string;
   periodo: string;

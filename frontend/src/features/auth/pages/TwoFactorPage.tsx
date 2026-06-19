@@ -1,10 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
+import { AuthShell, authLinkClass } from "@/features/auth/components/AuthShell";
 import { useAuth } from "@/features/auth/hooks/AuthProvider";
+import { Button } from "@/shared/components/ui/Button";
+import { Input } from "@/shared/components/ui/Input";
 
 const schema = z.object({
   code: z.string().min(6, "Código inválido").max(10),
@@ -39,33 +42,35 @@ export function TwoFactorPage() {
   });
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-xl font-semibold">Verificación 2FA</h1>
-        <p className="mt-1 text-sm text-slate-600">Ingresá el código de tu autenticador</p>
-        <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-          <div>
-            <label className="mb-1 block text-sm font-medium" htmlFor="code">
-              Código
-            </label>
-            <input
-              id="code"
-              inputMode="numeric"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              {...register("code")}
-            />
-            {errors.code && <p className="mt-1 text-xs text-red-600">{errors.code.message}</p>}
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-          >
-            Verificar
-          </button>
-        </form>
-      </div>
-    </div>
+    <AuthShell
+      title="Verificación 2FA"
+      subtitle="Ingresá el código de tu aplicación autenticadora."
+    >
+      <form className="space-y-4" onSubmit={onSubmit}>
+        <Input
+          label="Código de verificación"
+          id="code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          placeholder="000000"
+          error={errors.code?.message}
+          {...register("code")}
+        />
+        {error && (
+          <p className="text-sm text-status-danger" role="alert">
+            {error}
+          </p>
+        )}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Verificando…" : "Verificar"}
+        </Button>
+      </form>
+
+      <p className="mt-5 text-center text-sm">
+        <Link className={authLinkClass} to="/login">
+          Volver al login
+        </Link>
+      </p>
+    </AuthShell>
   );
 }
